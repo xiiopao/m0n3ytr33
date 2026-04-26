@@ -943,10 +943,11 @@ async function runBacktest(){
     const candles = await fetchBacktestData(pair, tf);
     setProgress(20, `Loaded ${candles.length} candles · Running signals...`);
 
-    // Need at least 60 bars for indicators to warm up
-    const warmup = 60;
+    // Need at least 200 bars for EMA200 to warm up properly
+    // Using 200 ensures the institutional EMA200 is reliable from the start
+    const warmup = 200;
     if(candles.length < warmup+10){
-      throw new Error('Not enough historical data returned');
+      throw new Error(`Not enough data — need ${warmup+10} bars minimum, got ${candles.length}`);
     }
 
     // PIP unit
@@ -978,6 +979,25 @@ async function runBacktest(){
 
       // If in a trade, check if SL or TP was hit this bar
       if(inTrade){
+        // Force close if trade has been open too long (30 bars = 5 days on 4H)
+        inTrade.barsOpen = (inTrade.barsOpen||0) + 1;
+        if(inTrade.barsOpen > 30 && !inTrade.tp1Hit){
+          const {signal, entry, lotSize, pipUnit} = inTrade;
+          const exitPrice = bar.close;
+          const pips = signal==='buy'
+            ? Math.round((exitPrice-entry)/pipUnit)
+            : Math.round((entry-exitPrice)/pipUnit);
+          const pnl = pips*pipVal*lotSize;
+          equity += pips*pipVal*lotSize;
+          trades.push({
+            date:inTrade.date, pair, signal:inTrade.signal,
+            entry:entry.toFixed(4), exit:exitPrice.toFixed(4),
+            pips:''+pips+'(timeout)', pnl:parseFloat(pnl.toFixed(2)),
+            result:pnl>=0?'win':'loss', equity:parseFloat(equity.toFixed(2)), tf,
+          });
+          equityCurve.push(parseFloat(equity.toFixed(2)));
+          inTrade=null; prevSig='neutral'; continue;
+        }
         const {signal, sl, tp1, tp2, entry, lotSize, pipUnit} = inTrade;
         let exitPrice = null;
         let exitType  = null;
@@ -1018,7 +1038,7 @@ async function runBacktest(){
             : Math.round((entry-exitPrice)/pipUnit);
           const remainingSize = inTrade.tp1Hit ? 0.5 : 1.0;
           const pnl = pips*pipVal*lotSize*remainingSize + (inTrade.partialProfit||0);
-          equity += (pips*pipVal*lotSize*remainingSize);
+          equity += (pips*pipVal*lotSize*remainingSize); // partialProfit already added to equity at TP1
           const result = exitType==='sl'?'loss':exitType==='tp2'?'win':'win';
 
           trades.push({
@@ -1036,33 +1056,13 @@ async function runBacktest(){
           equityCurve.push(parseFloat(equity.toFixed(2)));
           inTrade=null;
         }
-        prevSig=inTrade?inTrade.signal:'neutral';
+        prevSig='neutral'; // reset after trade closes so next signal starts fresh
         continue;
       }
 
       // Compute signal on this bar's history
-      const rsi  = calcRSI(h);
-      const ma50 = calcEMA(h,Math.min(50,h.length));
-      const ma20 = calcEMA(h,Math.min(20,h.length));
-      const ma10 = calcEMA(h,Math.min(10,h.length));
-      const macd = calcMACD(h);
-      const bb   = calcBB(h);
-      const atr  = calcATR(h);
-      const adx  = calcADX(h.map(c=>({high:c,low:c,close:c})));
-      const htfT = calcHigherTFTrend(h);
-      const cpat = detectCandlePattern(h);
       const price = bar.close;
-      const isTrending = adx>=20;
-
-      let bull=0,bear=0;
-      if(rsi<38) bull++; else if(rsi>62) bear++;
-      if(ma10>ma20&&ma20>ma50) bull++; else if(ma10<ma20&&ma20<ma50) bear++;
-      if(price>ma50) bull++; else bear++;
-      if(macd.hist>0) bull++; else if(macd.hist<0) bear++;
-      if(price<bb.lower) bull++; else if(price>bb.upper) bear++;
-      if(isTrending&&ma10>ma50) bull++; else if(isTrending&&ma10<ma50) bear++;
-      if(htfT==='bull') bull++; else if(htfT==='bear') bear++;
-      if(cpat==='bullish_reversal') bull++; else if(cpat==='bearish_reversal') bear++;
+      const atr   = calcATR(h);
 
       // ── STRATEGY BRANCH ─────────────────────────────
       const btStrategy = document.getElementById('bt-strategy')?.value||'trend';
@@ -1078,7 +1078,7 @@ async function runBacktest(){
         if(b2>=3){rawSig='buy';conf=100;}
         else if(be2>=3){rawSig='sell';conf=100;}
         else conf=Math.round(Math.max(b2,be2)/4*100);
-        confirmedEntry=rawSig!=='neutral'&&rawSig!==prevSig;
+        confirmedEntry=rawSig!=='neutral'; // fire whenever at extreme
         trendAligned=true;
       } else {
         // ── INSTITUTIONAL 3-INDICATOR: EMA200 + MACD + RSI ──
@@ -1094,9 +1094,9 @@ async function runBacktest(){
         else if(!aboveEMA&&macdBear&&rsiSell){rawSig='sell';conf=100;}
         else conf=0;
         trendAligned=true;
-        const pC=i>0?candles[i-1].close:bar.close;
-        confirmedEntry=(prevSig==='buy'&&bar.close>pC&&rawSig==='buy')||
-                       (prevSig==='sell'&&bar.close<pC&&rawSig==='sell');
+        // Enter on signal bar directly — no confirmation candle in backtest
+        // (confirmation candle was delaying entries causing worse fills)
+        confirmedEntry = rawSig!=='neutral' && rawSig!==prevSig;
       }
       let sig=rawSig;
 
@@ -1112,10 +1112,11 @@ async function runBacktest(){
           tp2Pips=Math.max(15,Math.round(distToMean/pipU));
         } else {
           slDist=Math.max(atr*1.5, minSLpips*pipU);
-          tp1Pips=Math.round(Math.max(slDist,minSLpips*pipU)/pipU*1.5);
-          tp2Pips=Math.round(Math.max(slDist,minSLpips*pipU)/pipU*3);
+          const slPipsCalc=Math.round(slDist/pipU);
+          tp1Pips=Math.round(slPipsCalc*1.5);
+          tp2Pips=Math.round(slPipsCalc*3);
         }
-        const slPips=Math.round(slDist/pipU);
+        const slPips=btStrategy==='reversion'?Math.round(slDist/pipU):(typeof slPipsCalc!=='undefined'?slPipsCalc:Math.round(slDist/pipU));
         const riskAmt  = equity*riskPct/100;
         const lotSize  = Math.max(0.01, Math.floor(riskAmt/(slPips*pipVal)*100)/100);
 
@@ -1156,6 +1157,7 @@ async function runBacktest(){
       pair, tf, trades, equityCurve, balance, finalBal,
       winRate, totalPnl, profitFactor, maxDD, returnPct,
       avgWin, avgLoss, wins, losses, minConf, useTrend,
+      strategy: document.getElementById('bt-strategy')?.value||'trend',
     });
 
   } catch(err){
