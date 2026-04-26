@@ -444,6 +444,66 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .bt-verdict.neutral{background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);color:var(--amber)}
 .bt-verdict.poor{background:rgba(251,113,133,0.08);border:1px solid rgba(251,113,133,0.2);color:var(--red)}
 .bt-empty{padding:60px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px;letter-spacing:1px;line-height:2}
+
+/* STRATEGY MODE SWITCHER */
+.strategy-switcher{
+  display:flex;gap:0;margin-bottom:20px;
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:12px;padding:4px;
+}
+.strategy-btn{
+  flex:1;padding:10px 16px;border:none;border-radius:9px;
+  font-family:var(--mono);font-size:12px;letter-spacing:1px;
+  font-weight:700;cursor:pointer;transition:all .2s;
+  background:none;color:var(--muted);
+}
+.strategy-btn.active{color:white}
+.strategy-btn.active.trend{background:linear-gradient(135deg,var(--acc2),var(--purple))}
+.strategy-btn.active.reversion{background:linear-gradient(135deg,var(--green2),var(--green))}
+.strategy-info{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:12px;padding:14px 18px;margin-bottom:20px;
+  font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--text2);
+}
+.strategy-info strong{color:var(--text)}
+.strategy-info.reversion{border-color:rgba(52,211,153,0.2);background:rgba(52,211,153,0.03)}
+.strategy-info.trend{border-color:rgba(56,189,248,0.2);background:rgba(56,189,248,0.03)}
+
+/* MEAN REVERSION SPECIFIC */
+.mr-levels{
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr;
+  gap:8px;margin-bottom:12px;
+}
+.mr-box{border-radius:9px;padding:9px 10px;text-align:center}
+.mr-box.upper2{background:rgba(251,113,133,0.1);border:1px solid rgba(251,113,133,0.2)}
+.mr-box.upper1{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.15)}
+.mr-box.lower1{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.15)}
+.mr-box.lower2{background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2)}
+.mr-box-label{font-family:var(--mono);font-size:9px;letter-spacing:1px;margin-bottom:4px}
+.mr-box.upper2 .mr-box-label{color:var(--red)}
+.mr-box.upper1 .mr-box-label{color:var(--amber)}
+.mr-box.lower1 .mr-box-label{color:var(--amber)}
+.mr-box.lower2 .mr-box-label{color:var(--green)}
+.mr-box-price{font-family:var(--mono);font-size:13px;font-weight:700}
+.mr-box.upper2 .mr-box-price{color:var(--red)}
+.mr-box.upper1 .mr-box-price{color:var(--amber)}
+.mr-box.lower1 .mr-box-price{color:var(--amber)}
+.mr-box.lower2 .mr-box-price{color:var(--green)}
+.mr-box-dist{font-family:var(--mono);font-size:9px;color:var(--text2);margin-top:2px}
+.mr-position-bar{
+  height:10px;background:var(--border2);border-radius:5px;
+  position:relative;margin-bottom:8px;overflow:visible;
+}
+.mr-position-marker{
+  position:absolute;top:-3px;
+  width:4px;height:16px;border-radius:2px;
+  background:var(--acc);transform:translateX(-50%);
+  transition:left .5s ease;
+}
+.mr-position-label{
+  font-family:var(--mono);font-size:10px;color:var(--text2);
+  text-align:center;margin-bottom:10px;
+}
 </style>
 </head>
 <body>
@@ -558,6 +618,19 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
           <div class="sec-title">Live Signals</div>
           <div class="sec-sub" id="signals-sub">8-INDICATOR CONFLUENCE · 4H CANDLES · REAL PRICES</div>
         </div>
+      </div>
+
+      <!-- Strategy Mode Switcher -->
+      <div class="strategy-switcher">
+        <button class="strategy-btn trend active" id="strat-trend" onclick="setStrategy('trend',this)">
+          📈 TREND FOLLOWING
+        </button>
+        <button class="strategy-btn reversion" id="strat-reversion" onclick="setStrategy('reversion',this)">
+          🔄 MEAN REVERSION
+        </button>
+      </div>
+      <div class="strategy-info trend" id="strategy-info">
+        <strong>Trend Following</strong> — Enters in the direction of momentum when 6/8 indicators agree. Works best in strongly trending markets. Uses ADX to filter out choppy conditions.
       </div>
       <!-- Weekly Danger Meter -->
       <div class="danger-meter" id="danger-meter">
@@ -694,6 +767,13 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
               <input class="form-input" id="bt-risk" type="number" value="1" step="0.5">
             </div>
             <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Strategy</div>
+              <select class="form-select" id="bt-strategy">
+                <option value="trend">📈 Trend Following</option>
+                <option value="reversion">🔄 Mean Reversion</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
               <div class="form-label">Min Confidence to Trade (%)</div>
               <select class="form-select" id="bt-conf">
                 <option value="50">50% — Medium &amp; above</option>
@@ -785,6 +865,7 @@ let currentTF = '4h'; // default
 // STATE
 // ═══════════════════════════════════════════════
 let state = {};
+let strategyMode = 'trend'; // 'trend' or 'reversion'
 let alertLog = [];
 let trades = [];
 let lastHistoryFetch = {};
@@ -984,39 +1065,49 @@ async function runBacktest(){
       if(htfT==='bull') bull++; else if(htfT==='bear') bear++;
       if(cpat==='bullish_reversal') bull++; else if(cpat==='bearish_reversal') bear++;
 
-      // Raw signal
-      let rawSig='neutral', conf=0;
-      if(bull>=6&&isTrending){rawSig='buy'; conf=Math.round(bull/8*100);}
-      else if(bear>=6&&isTrending){rawSig='sell'; conf=Math.round(bear/8*100);}
-      else{conf=Math.round(Math.max(bull,bear)/8*100);}
+      // ── STRATEGY BRANCH ─────────────────────────────
+      const btStrategy = document.getElementById('bt-strategy')?.value||'trend';
+      let rawSig='neutral',conf=0,confirmedEntry=false,trendAligned=true;
 
-      // Trend filter
-      const trendBull = ma10>ma50;
-      const trendAligned = !useTrend ||
-        (rawSig==='buy'&&trendBull)||(rawSig==='sell'&&!trendBull)||(rawSig==='neutral');
-
-      // ── CONFIRMATION CANDLE RULE ────────────────────
-      // The signal from the PREVIOUS bar must match rawSig
-      // AND current candle must close in the signal direction
-      const prevClose = i>0 ? candles[i-1].close : bar.close;
-      const bullConfirm = prevSig==='buy'  && bar.close>prevClose;
-      const bearConfirm = prevSig==='sell' && bar.close<prevClose;
-
-      let sig = 'neutral';
-      if(rawSig==='buy')  sig='buy';   // store for next bar
-      if(rawSig==='sell') sig='sell';
-
-      // Confirmed entry only when previous bar had raw signal
-      // AND current bar closed confirming it
-      const confirmedEntry = (bullConfirm && prevSig==='buy') ||
-                             (bearConfirm && prevSig==='sell');
+      if(btStrategy==='reversion'){
+        const bbPos2=calcBBPosition(h,20,2);
+        const rsiV2=calcRSI(h,14);
+        const divV2=calcRSIDivergence(h,14);
+        let b2=0,be2=0;
+        if(bbPos2.pos<=15)b2++;if(rsiV2<35)b2++;if(divV2==='bullish')b2++;if(bbPos2.zscore<=-1.5)b2++;
+        if(bbPos2.pos>=85)be2++;if(rsiV2>65)be2++;if(divV2==='bearish')be2++;if(bbPos2.zscore>=1.5)be2++;
+        if(b2>=3){rawSig='buy';conf=Math.round(b2/4*100);}
+        else if(be2>=3){rawSig='sell';conf=Math.round(be2/4*100);}
+        else conf=Math.round(Math.max(b2,be2)/4*100);
+        confirmedEntry=rawSig!=='neutral'&&rawSig!==prevSig;
+        trendAligned=true;
+      } else {
+        if(bull>=6&&isTrending){rawSig='buy';conf=Math.round(bull/8*100);}
+        else if(bear>=6&&isTrending){rawSig='sell';conf=Math.round(bear/8*100);}
+        else conf=Math.round(Math.max(bull,bear)/8*100);
+        const tB=ma10>ma50;
+        trendAligned=!useTrend||(rawSig==='buy'&&tB)||(rawSig==='sell'&&!tB)||(rawSig==='neutral');
+        const pC=i>0?candles[i-1].close:bar.close;
+        confirmedEntry=(prevSig==='buy'&&bar.close>pC)||(prevSig==='sell'&&bar.close<pC);
+      }
+      let sig=rawSig;
 
       // Open trade if confirmed and meets criteria
       if(confirmedEntry && conf>=minConf && trendAligned){
-        const slDist   = Math.max(atr*1.5, minSLpips*pipU);
-        const slPips   = Math.round(slDist/pipU);
-        const tp1Pips  = Math.round(slPips*1.5);
-        const tp2Pips  = Math.round(slPips*3);
+        let slDist, tp1Pips, tp2Pips;
+        if(btStrategy==='reversion'){
+          // Mean reversion: SL beyond extreme, TP at mean
+          const bbPos3=calcBBPosition(h,20,2);
+          const distToMean=Math.abs(price-bbPos3.mid);
+          slDist=Math.max(atr*0.8, minSLpips*pipU);
+          tp1Pips=Math.max(10,Math.round(distToMean*0.5/pipU));
+          tp2Pips=Math.max(15,Math.round(distToMean/pipU));
+        } else {
+          slDist=Math.max(atr*1.5, minSLpips*pipU);
+          tp1Pips=Math.round(Math.max(slDist,minSLpips*pipU)/pipU*1.5);
+          tp2Pips=Math.round(Math.max(slDist,minSLpips*pipU)/pipU*3);
+        }
+        const slPips=Math.round(slDist/pipU);
         const riskAmt  = equity*riskPct/100;
         const lotSize  = Math.max(0.01, Math.floor(riskAmt/(slPips*pipVal)*100)/100);
 
@@ -1052,6 +1143,7 @@ async function runBacktest(){
     setProgress(100,'Done!');
     await new Promise(r=>setTimeout(r,200));
 
+    const btStrat = document.getElementById('bt-strategy')?.value||'trend';
     renderBacktestResults({
       pair, tf, trades, equityCurve, balance, finalBal,
       winRate, totalPnl, profitFactor, maxDD, returnPct,
@@ -1081,18 +1173,19 @@ function renderBacktestResults(r){
 
   // Verdict
   let verdictCls, verdictText;
-  if(r.profitFactor>=2 && r.winRate>=55){
+  const stratLabel = r.strategy==='reversion'?'Mean Reversion':'Trend Following';
+  if(r.profitFactor>=2 && r.winRate>=45){
     verdictCls='excellent';
-    verdictText=`🏆 EXCELLENT STRATEGY — Profit Factor ${r.profitFactor.toFixed(2)} with ${r.winRate}% win rate. This strategy shows strong historical edge on ${r.pair} ${r.tf} candles. Consider paper trading for 1-2 months to validate before going live.`;
-  } else if(r.profitFactor>=1.3 && r.winRate>=45){
+    verdictText=`🏆 EXCELLENT — ${stratLabel} · Profit Factor ${r.profitFactor.toFixed(2)} · Win Rate ${r.winRate}%. Strong historical edge on ${r.pair} ${r.tf} candles. Paper trade for 1-2 months to validate before going live.`;
+  } else if(r.profitFactor>=1.3 && r.winRate>=35){
     verdictCls='good';
-    verdictText=`✅ GOOD STRATEGY — Profit Factor ${r.profitFactor.toFixed(2)} with ${r.winRate}% win rate. Positive historical edge detected. Continue paper trading and monitor live performance carefully.`;
+    verdictText=`✅ GOOD — ${stratLabel} · Profit Factor ${r.profitFactor.toFixed(2)} · Win Rate ${r.winRate}%. Positive edge detected. Keep paper trading and monitor carefully.`;
   } else if(r.profitFactor>=1.0){
     verdictCls='neutral';
-    verdictText=`⚠️ MARGINAL STRATEGY — Profit Factor ${r.profitFactor.toFixed(2)} with ${r.winRate}% win rate. Slight edge but not convincing. Consider adjusting confidence threshold or timeframe. Keep paper trading.`;
+    verdictText=`⚠️ MARGINAL — ${stratLabel} · Profit Factor ${r.profitFactor.toFixed(2)} · Win Rate ${r.winRate}%. Slight edge but not convincing. Try adjusting settings or switching strategy.`;
   } else {
     verdictCls='poor';
-    verdictText=`❌ POOR HISTORICAL PERFORMANCE — Profit Factor ${r.profitFactor.toFixed(2)} with ${r.winRate}% win rate. This combination of settings did not show edge on historical data. Try higher confidence threshold or different timeframe.`;
+    verdictText=`❌ POOR — ${stratLabel} · Profit Factor ${r.profitFactor.toFixed(2)} · Win Rate ${r.winRate}%. No historical edge with these settings. Try the other strategy or different timeframe.`;
   }
 
   res.innerHTML = `
@@ -1698,6 +1791,94 @@ function calcHigherTFTrend(h){
   return 'neutral';
 }
 
+// MEAN REVERSION: Calculate Bollinger Band position (Z-score)
+function calcBBPosition(h, period=20, mult=2){
+  if(h.length<period) return {pos:50, zscore:0, upper:h[h.length-1], lower:h[h.length-1], mid:h[h.length-1], width:0};
+  const slice=h.slice(-period);
+  const mid=slice.reduce((a,b)=>a+b,0)/period;
+  const sd=Math.sqrt(slice.reduce((a,b)=>a+Math.pow(b-mid,2),0)/period)||0.0001;
+  const upper=mid+mult*sd;
+  const lower=mid-mult*sd;
+  const price=h[h.length-1];
+  const pos=Math.round((price-lower)/(upper-lower)*100);
+  const zscore=parseFloat(((price-mid)/sd).toFixed(2));
+  const width=parseFloat(((upper-lower)/mid*100).toFixed(2));
+  return {pos,zscore,upper,lower,mid,width};
+}
+
+// MEAN REVERSION: RSI divergence (price making new low but RSI higher = bullish divergence)
+function calcRSIDivergence(h, period=14){
+  if(h.length<period*2) return 'none';
+  const recent=h.slice(-period);
+  const prior=h.slice(-period*2,-period);
+  const recentRSI=calcRSI(h);
+  const priorRSI=calcRSI(h.slice(0,-period));
+  const priceDown=Math.min(...recent)<Math.min(...prior);
+  const priceUp=Math.max(...recent)>Math.max(...prior);
+  if(priceDown&&recentRSI>priorRSI) return 'bullish'; // price lower, RSI higher
+  if(priceUp&&recentRSI<priorRSI) return 'bearish';   // price higher, RSI lower
+  return 'none';
+}
+
+// MEAN REVERSION: Check if price is at extreme (ready to revert)
+function calcMeanReversionSignal(h, pair){
+  const bbPos = calcBBPosition(h,20,2);
+  const rsi   = calcRSI(h,14);
+  const div   = calcRSIDivergence(h,14);
+  const price = h[h.length-1];
+  const pipU  = 0.0001;
+
+  // Mean reversion targets
+  const tp1 = bbPos.mid;           // target: return to mean (middle band)
+  const tp2 = bbPos.mid;           // same — mean is the target
+
+  let signal='neutral', confidence=0, reasons=[];
+  let bull=0, bear=0;
+
+  // Buy when price is at lower extreme (below lower BB)
+  if(bbPos.pos<=15){bull++;reasons.push({t:'At lower BB extreme',b:true})}
+  if(rsi<35){bull++;reasons.push({t:'RSI oversold',b:true})}
+  if(div==='bullish'){bull++;reasons.push({t:'Bullish RSI divergence',b:true})}
+  if(bbPos.zscore<=-1.5){bull++;reasons.push({t:'Z-score extreme low',b:true})}
+
+  // Sell when price is at upper extreme (above upper BB)
+  if(bbPos.pos>=85){bear++;reasons.push({t:'At upper BB extreme',b:false})}
+  if(rsi>65){bear++;reasons.push({t:'RSI overbought',b:false})}
+  if(div==='bearish'){bear++;reasons.push({t:'Bearish RSI divergence',b:false})}
+  if(bbPos.zscore>=1.5){bear++;reasons.push({t:'Z-score extreme high',b:false})}
+
+  const total=4;
+  if(bull>=3){signal='buy'; confidence=Math.round(bull/total*100);}
+  else if(bear>=3){signal='sell'; confidence=Math.round(bear/total*100);}
+  else{confidence=Math.round(Math.max(bull,bear)/total*100);}
+
+  // Mean reversion SL/TP
+  // SL: beyond the extreme (1.5× BB width away)
+  // TP: back to the mean (middle band)
+  const slDist = Math.abs(price - (signal==='buy'?bbPos.lower:bbPos.upper)) * 0.5;
+  const tpDist = Math.abs(price - bbPos.mid);
+  const slPips = Math.round(Math.max(slDist,15*pipU)/pipU);
+  const tp1Pips= Math.round(tpDist*0.5/pipU);
+  const tp2Pips= Math.round(tpDist/pipU);
+
+  let plan=null;
+  if(signal==='buy'){
+    plan={
+      sl:price-slPips*pipU, tp1:price+tp1Pips*pipU, tp2:bbPos.mid,
+      slPips, tp1Pips, tp2Pips:Math.round(tpDist/pipU), usedMin:false,
+      srWarning:null, target:'Mean (middle BB)',
+    };
+  } else if(signal==='sell'){
+    plan={
+      sl:price+slPips*pipU, tp1:price-tp1Pips*pipU, tp2:bbPos.mid,
+      slPips, tp1Pips, tp2Pips:Math.round(tpDist/pipU), usedMin:false,
+      srWarning:null, target:'Mean (middle BB)',
+    };
+  }
+
+  return {signal, confidence, reasons:reasons.slice(0,4), bbPos, bull, bear, plan, div};
+}
+
 // NEW: Pin Bar / Engulfing candle detection
 // Needs OHLC data — works with close-only as approximation
 function detectCandlePattern(h){
@@ -1768,12 +1949,46 @@ function calcDailyTrend(dailyH){
 // ═══════════════════════════════════════════════
 // COMPUTE SIGNAL — 7 INDICATORS
 // ═══════════════════════════════════════════════
+function computeMeanReversionSignal(pair, s, h, price){
+  const mr = calcMeanReversionSignal(h, pair);
+  s.prevSignal  = s.signal;
+  s.signal      = mr.signal;
+  s.confidence  = mr.confidence;
+  s.reasons     = mr.reasons;
+  s.bullScore   = mr.bull;
+  s.bearScore   = mr.bear;
+  s.plan        = mr.plan;
+  s.mrData      = mr; // store BB position data for UI
+  s.indicators  = {
+    ...s.indicators,
+    bbPos: mr.bbPos,
+    rsi: calcRSI(h,14),
+    div: mr.div,
+    atr: calcATR(h,14),
+  };
+  s.trendAligned = true; // mean reversion doesn't need trend alignment
+  s.dailyTrend   = calcDailyTrend(s.dailyHistory);
+  s.sr           = calcSupportResistance(h, price, pair);
+  s.pendingSignal= null;
+  s.prevRawSignal= null;
+
+  // Confidence history
+  s.confHistory.push({t:Date.now(),c:s.confidence,sig:s.signal});
+  if(s.confHistory.length>24) s.confHistory.shift();
+}
+
 function computeSignal(pair){
   const s=state[pair], h=s.history;
   if(!h.length) return;
   const price=h[h.length-1];
 
-  // ── UPGRADED SIGNAL ENGINE ──────────────────────────
+  // ── BRANCH BY STRATEGY MODE ─────────────────────────
+  if(strategyMode==='reversion'){
+    computeMeanReversionSignal(pair, s, h, price);
+    return;
+  }
+
+  // ── TREND FOLLOWING ENGINE ───────────────────────────
   // Indicators on current timeframe candles
   const rsi  = calcRSI(h,14);
   const ma50 = calcEMA(h,Math.min(50,h.length));
@@ -2046,6 +2261,41 @@ function renderPairs(){
 
         ${trendWarn}
 
+        ${strategyMode==='reversion'&&s.mrData?`
+        <div style="margin-bottom:14px">
+          <div class="mr-levels">
+            <div class="mr-box upper2">
+              <div class="mr-box-label">UPPER 2σ</div>
+              <div class="mr-box-price">${fmt(p,s.mrData.bbPos.upper)}</div>
+              <div class="mr-box-dist">SELL ZONE</div>
+            </div>
+            <div class="mr-box upper1">
+              <div class="mr-box-label">MEAN</div>
+              <div class="mr-box-price">${fmt(p,s.mrData.bbPos.mid)}</div>
+              <div class="mr-box-dist">TARGET</div>
+            </div>
+            <div class="mr-box lower1">
+              <div class="mr-box-label">MEAN</div>
+              <div class="mr-box-price">${fmt(p,s.mrData.bbPos.mid)}</div>
+              <div class="mr-box-dist">TARGET</div>
+            </div>
+            <div class="mr-box lower2">
+              <div class="mr-box-label">LOWER 2σ</div>
+              <div class="mr-box-price">${fmt(p,s.mrData.bbPos.lower)}</div>
+              <div class="mr-box-dist">BUY ZONE</div>
+            </div>
+          </div>
+          <div class="mr-position-bar">
+            <div class="mr-position-marker" style="left:${Math.max(2,Math.min(98,s.mrData.bbPos.pos))}%"></div>
+          </div>
+          <div class="mr-position-label">
+            Price position: <strong style="color:${s.mrData.bbPos.pos<=15?'var(--green)':s.mrData.bbPos.pos>=85?'var(--red)':'var(--acc)'}">${s.mrData.bbPos.pos}%</strong> of BB range
+            · Z-score: <strong style="color:${Math.abs(s.mrData.bbPos.zscore)>=1.5?'var(--amber)':'var(--text2)'}">${s.mrData.bbPos.zscore}</strong>
+            · BB Width: ${s.mrData.bbPos.width}%
+            ${s.mrData.div!=='none'?`· <strong style="color:var(--purple)">${s.mrData.div.toUpperCase()} DIVERGENCE ⚡</strong>`:''}
+          </div>
+        </div>`:''}
+
         ${s.pendingSignal?`
         <div style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:9px 14px;margin-bottom:12px;font-family:var(--mono);font-size:12px;color:var(--purple);display:flex;align-items:center;gap:8px">
           <span style="font-size:16px">⏳</span>
@@ -2272,6 +2522,33 @@ function setStatus(status,msg){
 // ═══════════════════════════════════════════════
 // UI
 // ═══════════════════════════════════════════════
+function setStrategy(mode, btn){
+  strategyMode = mode;
+  document.querySelectorAll('.strategy-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const info = document.getElementById('strategy-info');
+  if(mode==='trend'){
+    info.className='strategy-info trend';
+    info.innerHTML='<strong>Trend Following</strong> — Enters in the direction of momentum when 6/8 indicators agree. Works best in strongly trending markets. Uses ADX to filter out choppy conditions.';
+  } else {
+    info.className='strategy-info reversion';
+    info.innerHTML='<strong>Mean Reversion</strong> — Buys when price is at the lower Bollinger Band extreme, sells at the upper extreme. Targets a return to the mean (middle band). Works best in ranging markets. Higher win rate, smaller individual wins.';
+  }
+
+  // Reset and refetch
+  lastHistoryFetch={};
+  PAIRS.forEach(p=>{
+    state[p].history=[];state[p].confHistory=[];
+    state[p].price=null;state[p].dataSource='loading';
+    state[p].mrData=null;state[p].prevRawSignal=null;
+  });
+  document.getElementById('pairs-list').innerHTML='';
+  clearTimeout(fetchTimer);
+  showToast(`Switched to ${mode==='trend'?'Trend Following':'Mean Reversion'} strategy`);
+  fetchAllPrices(true);
+}
+
 function setTimeframe(tf, btn){
   if(tf===currentTF) return; // already selected
   currentTF = tf;
