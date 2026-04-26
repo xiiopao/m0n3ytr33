@@ -616,7 +616,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="sec-hdr">
         <div>
           <div class="sec-title">Live Signals</div>
-          <div class="sec-sub" id="signals-sub">8-INDICATOR CONFLUENCE · 4H CANDLES · REAL PRICES</div>
+          <div class="sec-sub" id="signals-sub">3-INDICATOR CONFLUENCE · 4H CANDLES · REAL PRICES</div>
         </div>
       </div>
 
@@ -630,7 +630,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </button>
       </div>
       <div class="strategy-info trend" id="strategy-info">
-        <strong>Trend Following</strong> — Enters in the direction of momentum when 6/8 indicators agree. Works best in strongly trending markets. Uses ADX to filter out choppy conditions.
+        <strong>Institutional Trend Following</strong> — EMA200 (institutional trend) + MACD flip (precise timing) + RSI zone (momentum confirmation). All 3 must agree. Fewer but much higher quality signals.
       </div>
       <!-- Weekly Danger Meter -->
       <div class="danger-meter" id="danger-meter">
@@ -776,9 +776,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
             <div class="form-group" style="margin-bottom:14px">
               <div class="form-label">Min Confidence to Trade (%)</div>
               <select class="form-select" id="bt-conf">
-                <option value="50">50% — Medium &amp; above</option>
-                <option value="70" selected>70% — High confidence only</option>
-                <option value="85">85% — Very high only</option>
+                <option value="100" selected>100% — All 3 indicators agree (recommended)</option>
+                <option value="50">50% — Partial signals included</option>
               </select>
             </div>
             <div class="form-group" style="margin-bottom:14px">
@@ -1076,19 +1075,28 @@ async function runBacktest(){
         let b2=0,be2=0;
         if(bbPos2.pos<=15)b2++;if(rsiV2<35)b2++;if(divV2==='bullish')b2++;if(bbPos2.zscore<=-1.5)b2++;
         if(bbPos2.pos>=85)be2++;if(rsiV2>65)be2++;if(divV2==='bearish')be2++;if(bbPos2.zscore>=1.5)be2++;
-        if(b2>=3){rawSig='buy';conf=Math.round(b2/4*100);}
-        else if(be2>=3){rawSig='sell';conf=Math.round(be2/4*100);}
+        if(b2>=3){rawSig='buy';conf=100;}
+        else if(be2>=3){rawSig='sell';conf=100;}
         else conf=Math.round(Math.max(b2,be2)/4*100);
         confirmedEntry=rawSig!=='neutral'&&rawSig!==prevSig;
         trendAligned=true;
       } else {
-        if(bull>=6&&isTrending){rawSig='buy';conf=Math.round(bull/8*100);}
-        else if(bear>=6&&isTrending){rawSig='sell';conf=Math.round(bear/8*100);}
-        else conf=Math.round(Math.max(bull,bear)/8*100);
-        const tB=ma10>ma50;
-        trendAligned=!useTrend||(rawSig==='buy'&&tB)||(rawSig==='sell'&&!tB)||(rawSig==='neutral');
+        // ── INSTITUTIONAL 3-INDICATOR: EMA200 + MACD + RSI ──
+        const ema200bt=calcEMA(h,Math.min(200,h.length));
+        const macdbt=calcMACD(h);
+        const rsibt=calcRSI(h,14);
+        const aboveEMA=price>ema200bt;
+        const macdBull=macdbt.hist>0&&macdbt.macd>macdbt.signal;
+        const macdBear=macdbt.hist<0&&macdbt.macd<macdbt.signal;
+        const rsiBuy=rsibt>=40&&rsibt<=65;
+        const rsiSell=rsibt>=35&&rsibt<=60;
+        if(aboveEMA&&macdBull&&rsiBuy){rawSig='buy';conf=100;}
+        else if(!aboveEMA&&macdBear&&rsiSell){rawSig='sell';conf=100;}
+        else conf=0;
+        trendAligned=true;
         const pC=i>0?candles[i-1].close:bar.close;
-        confirmedEntry=(prevSig==='buy'&&bar.close>pC)||(prevSig==='sell'&&bar.close<pC);
+        confirmedEntry=(prevSig==='buy'&&bar.close>pC&&rawSig==='buy')||
+                       (prevSig==='sell'&&bar.close<pC&&rawSig==='sell');
       }
       let sig=rawSig;
 
@@ -1988,109 +1996,92 @@ function computeSignal(pair){
     return;
   }
 
-  // ── TREND FOLLOWING ENGINE ───────────────────────────
-  // Indicators on current timeframe candles
-  const rsi  = calcRSI(h,14);
-  const ma50 = calcEMA(h,Math.min(50,h.length));
-  const ma20 = calcEMA(h,Math.min(20,h.length));
-  const ma10 = calcEMA(h,Math.min(10,h.length));
-  const macd = calcMACD(h);
-  const bb   = calcBB(h,20);
-  const atr  = calcATR(h,14);
-  // NEW indicators
-  const adx  = calcADX(s.ohlcHistory||h.map(c=>({high:c,low:c,close:c})));
-  const htfTrend = calcHigherTFTrend(h);
-  const candlePattern = detectCandlePattern(h);
+  // ── INSTITUTIONAL 3-INDICATOR ENGINE ───────────────
+  // EMA200 (trend) + MACD (timing) + RSI (confirmation)
+  // Each measures something completely different — zero redundancy
 
-  s.indicators = {rsi,ma50,ma20,ma10,macd,bb,atr,adx,htfTrend,candlePattern};
+  const rsi    = calcRSI(h, 14);
+  const ema200 = calcEMA(h, Math.min(200, h.length));
+  const ema50  = calcEMA(h, Math.min(50,  h.length));  // kept for S&R calc
+  const macd   = calcMACD(h);
+  const atr    = calcATR(h, 14);
+  const bb     = calcBB(h, 20); // kept for S&R display only
 
-  // Upgrade #3 — daily trend
+  s.indicators = {rsi, ema200, ema50, macd, atr, bb};
   s.dailyTrend = calcDailyTrend(s.dailyHistory);
+  s.sr         = calcSupportResistance(h, price, pair);
 
-  // Upgrade #2 — S&R
-  s.sr = calcSupportResistance(h, price, pair);
+  // ── RULE 1: EMA200 — Major Trend Direction ───────────
+  // The most watched level by institutional traders globally
+  // Price above EMA200 = only look for BUY opportunities
+  // Price below EMA200 = only look for SELL opportunities
+  const aboveEMA200 = price > ema200;
+  const belowEMA200 = price < ema200;
+  const distFromEMA200 = Math.abs(price - ema200);
+  const pctFromEMA200  = distFromEMA200 / ema200 * 100;
 
-  let bull=0,bear=0; const r=[];
+  // ── RULE 2: MACD Histogram Flip ──────────────────────
+  // Only care about the histogram flipping from negative to positive (or vice versa)
+  // This is the most precise entry timing signal
+  const macdBullFlip = macd.hist > 0 && macd.macd > macd.signal;
+  const macdBearFlip = macd.hist < 0 && macd.macd < macd.signal;
 
-  // ── GATE 1: ADX FILTER — only trade when market is trending ──
-  // ADX < 20 = choppy market, skip signal entirely
-  const isTrending = adx >= 20;
+  // ── RULE 3: RSI Confirmation ─────────────────────────
+  // RSI confirms momentum is NOT exhausted at entry
+  // For BUY: RSI must be between 40-65 (momentum building, not overbought)
+  // For SELL: RSI must be between 35-60 (momentum building, not oversold)
+  const rsiBuyZone  = rsi >= 40 && rsi <= 65;
+  const rsiSellZone = rsi >= 35 && rsi <= 60;
 
-  // 1. RSI (tightened thresholds for better accuracy)
-  if(rsi<38){bull++;r.push({t:'RSI oversold',b:true})}
-  else if(rsi>62){bear++;r.push({t:'RSI overbought',b:false})}
+  // ── SIGNAL LOGIC ─────────────────────────────────────
+  // BUY:  Price above EMA200 + MACD bullish flip + RSI in buy zone
+  // SELL: Price below EMA200 + MACD bearish flip + RSI in sell zone
+  // All 3 must agree — no partial signals
 
-  // 2. MA Stack
-  if(ma10>ma20&&ma20>ma50){bull++;r.push({t:'MA bullish stack',b:true})}
-  else if(ma10<ma20&&ma20<ma50){bear++;r.push({t:'MA bearish stack',b:false})}
+  let rawSignal = 'neutral';
+  const r = [];
 
-  // 3. Price vs MA50
-  if(price>ma50){bull++;r.push({t:'Above MA50',b:true})}
-  else{bear++;r.push({t:'Below MA50',b:false})}
-
-  // 4. MACD (histogram direction — more reliable than line cross)
-  if(macd.hist>0){bull++;r.push({t:'MACD bullish',b:true})}
-  else if(macd.hist<0){bear++;r.push({t:'MACD bearish',b:false})}
-
-  // 5. Bollinger Bands
-  if(price<bb.lower){bull++;r.push({t:'BB oversold',b:true})}
-  else if(price>bb.upper){bear++;r.push({t:'BB overbought',b:false})}
-
-  // 6. NEW: ADX Trend Strength (replaces Stochastic)
-  if(isTrending && ma10>ma50){bull++;r.push({t:'ADX trend bullish',b:true})}
-  else if(isTrending && ma10<ma50){bear++;r.push({t:'ADX trend bearish',b:false})}
-
-  // 7. NEW: Higher Timeframe Confluence (replaces raw Momentum)
-  if(htfTrend==='bull'){bull++;r.push({t:'Higher TF bullish',b:true})}
-  else if(htfTrend==='bear'){bear++;r.push({t:'Higher TF bearish',b:false})}
-
-  // 8. NEW: Candlestick Pattern Confirmation (bonus point)
-  if(candlePattern==='bullish_reversal'){bull++;r.push({t:'Reversal candle',b:true})}
-  else if(candlePattern==='bearish_reversal'){bear++;r.push({t:'Reversal candle',b:false})}
-
-  s.bullScore=bull; s.bearScore=bear;
-  const total=8;
-
-  // Raw signal from indicators
-  let rawSignal='neutral';
-  if(bull>=6 && isTrending) rawSignal='buy';
-  else if(bear>=6 && isTrending) rawSignal='sell';
-
-  // ── CONFIRMATION CANDLE RULE ─────────────────────────
-  // Don't enter on the signal candle itself.
-  // Wait for the NEXT candle to CLOSE in the signal direction.
-  // prevRawSignal tracks what signal fired on the PREVIOUS bar.
-  // Current bar must then close confirming that direction.
-  const prevClose = h[h.length-2]||price;
-  const bullConfirm = s.prevRawSignal==='buy'  && price>prevClose; // candle closed up
-  const bearConfirm = s.prevRawSignal==='sell' && price<prevClose; // candle closed down
-
-  if(rawSignal!=='neutral'){
-    // Store raw signal for next bar to check
-    s.prevRawSignal = rawSignal;
+  if(aboveEMA200 && macdBullFlip && rsiBuyZone){
+    rawSignal = 'buy';
+    r.push({t:`Above EMA200 (+${pctFromEMA200.toFixed(2)}%)`,b:true});
+    r.push({t:'MACD histogram bullish flip',b:true});
+    r.push({t:`RSI ${rsi} — momentum building`,b:true});
+  } else if(belowEMA200 && macdBearFlip && rsiSellZone){
+    rawSignal = 'sell';
+    r.push({t:`Below EMA200 (-${pctFromEMA200.toFixed(2)}%)`,b:false});
+    r.push({t:'MACD histogram bearish flip',b:false});
+    r.push({t:`RSI ${rsi} — momentum building`,b:false});
   }
 
-  // Only set confirmed signal if confirmation candle occurred
+  // ── PARTIAL SIGNALS (show progress toward full signal) ──
+  let bull=0, bear=0;
+  if(aboveEMA200) bull++; else bear++;
+  if(macdBullFlip) bull++; else if(macdBearFlip) bear++;
+  if(rsiBuyZone&&aboveEMA200) bull++; else if(rsiSellZone&&belowEMA200) bear++;
+
+  s.bullScore = bull;
+  s.bearScore = bear;
+  const total = 3;
+
+  // ── CONFIRMATION CANDLE ───────────────────────────────
+  // Wait for next candle to close in signal direction before entry
+  const prevClose = h[h.length-2] || price;
+  const bullConfirm = s.prevRawSignal==='buy'  && price > prevClose;
+  const bearConfirm = s.prevRawSignal==='sell' && price < prevClose;
+
+  if(rawSignal !== 'neutral') s.prevRawSignal = rawSignal;
+
   let confirmedSignal = 'neutral';
-  if(bullConfirm && s.prevRawSignal==='buy')  confirmedSignal='buy';
-  if(bearConfirm && s.prevRawSignal==='sell') confirmedSignal='sell';
+  if(bullConfirm && s.prevRawSignal==='buy')  confirmedSignal = 'buy';
+  if(bearConfirm && s.prevRawSignal==='sell') confirmedSignal = 'sell';
+  if(confirmedSignal !== 'neutral') s.prevRawSignal = null;
 
-  // If confirmed, clear prevRawSignal so we don't fire again
-  if(confirmedSignal!=='neutral') s.prevRawSignal=null;
-
-  s.prevSignal=s.signal;
-  s.signal = confirmedSignal;
-  s.confidence = confirmedSignal==='neutral'
-    ? Math.round(Math.max(bull,bear)/total*100)
-    : Math.round(Math.max(bull,bear)/total*100);
-
-  // Show pending signal in card so user knows one is brewing
+  s.prevSignal    = s.signal;
+  s.signal        = confirmedSignal;
+  s.confidence    = rawSignal==='buy'||rawSignal==='sell' ? 100 :
+                    Math.round(Math.max(bull,bear)/total*100);
   s.pendingSignal = rawSignal!=='neutral' && confirmedSignal==='neutral' ? rawSignal : null;
-
-  s.reasons=r.filter(x=>s.signal!=='neutral'?
-    (s.signal==='buy'?x.b:!x.b):
-    (rawSignal==='buy'?x.b:rawSignal==='sell'?!x.b:true)
-  ).slice(0,5);
+  s.reasons       = r;
 
   // Upgrade #3 — trend alignment check
   s.trendAligned = s.signal==='neutral' ||
@@ -2204,10 +2195,8 @@ function renderPairs(){
     const s=state[p],ind=s.indicators,price=s.price;
     let pct=0,up=true;
     if(price!==null&&s.openPrice){pct=(price-s.openPrice)/s.openPrice*100;up=pct>=0;}
-    const rsiC =ind.rsi>62?'var(--red)':ind.rsi<38?'var(--green)':'var(--text3)';
-    const macdC=ind.macd?.hist>0?'var(--green)':'var(--red)';
-    const bbP  =ind.bb&&price?Math.round((price-ind.bb.lower)/(ind.bb.upper-ind.bb.lower)*100):50;
-    const bbC  =bbP<20?'var(--green)':bbP>80?'var(--red)':'var(--text3)';
+    const rsiC =ind.rsi>65?'var(--red)':ind.rsi<35?'var(--green)':'var(--green)';
+    const macdC=ind.macd?.hist>0&&ind.macd?.macd>ind.macd?.signal?'var(--green)':'var(--red)';
     const sigIcon=s.signal==='buy'?'▲':s.signal==='sell'?'▼':'◆';
     const srcTag=s.dataSource==='live'?`<span style="color:var(--green);font-weight:700">● LIVE · ${TIMEFRAMES[currentTF].label}</span>`:s.dataSource==='stale'?'<span style="color:var(--amber)">⚠ STALE</span>':'<span style="color:var(--muted)">LOADING</span>';
     const cardId='card-'+p.replace('/','');
@@ -2322,15 +2311,46 @@ function renderPairs(){
         </div>`:''}
 
         ${price===null?`<div style="font-family:var(--mono);font-size:14px;color:var(--amber);padding:12px 0">⏳ Fetching live data...</div>`:`
-        <div class="ind-grid">
-          <div class="ind-box"><div class="ind-name">RSI·14</div><div class="ind-val" style="color:${rsiC}">${ind.rsi??'—'}</div><div class="ind-state">${(ind.rsi??50)>62?'OVERBOUGHT':(ind.rsi??50)<38?'OVERSOLD':'NEUTRAL'}</div></div>
-          <div class="ind-box"><div class="ind-name">MACD HIST</div><div class="ind-val" style="color:${macdC}">${ind.macd?.hist>0?'BULL':'BEAR'}</div><div class="ind-state">${ind.macd?fmt(p,Math.abs(ind.macd.hist)):'—'}</div></div>
-          <div class="ind-box"><div class="ind-name">BB %B</div><div class="ind-val" style="color:${bbC}">${bbP}%</div><div class="ind-state">${bbP<20?'OVERSOLD':bbP>80?'OVERBOUGHT':'MID RANGE'}</div></div>
-          <div class="ind-box"><div class="ind-name">MA TREND</div><div class="ind-val" style="color:${ind.ma10>ind.ma50?'var(--green)':'var(--red)'}">${ind.ma10>ind.ma50?'BULL':'BEAR'}</div><div class="ind-state">${ind.ma10>ind.ma20&&ind.ma20>ind.ma50?'STACK ▲':ind.ma10<ind.ma20&&ind.ma20<ind.ma50?'STACK ▼':'MIXED'}</div></div>
-          <div class="ind-box"><div class="ind-name">ADX·14</div><div class="ind-val" style="color:${(ind.adx||0)>=25?'var(--green)':(ind.adx||0)>=20?'var(--amber)':'var(--red)'}">${ind.adx??'—'}</div><div class="ind-state">${(ind.adx||0)>=50?'STRONG':(ind.adx||0)>=25?'TRENDING':(ind.adx||0)>=20?'WEAK':'CHOPPY'}</div></div>
-          <div class="ind-box"><div class="ind-name">HTF TREND</div><div class="ind-val" style="color:${ind.htfTrend==='bull'?'var(--green)':ind.htfTrend==='bear'?'var(--red)':'var(--amber)'}">${(ind.htfTrend||'—').toUpperCase()}</div><div class="ind-state">higher TF</div></div>
-          <div class="ind-box"><div class="ind-name">CANDLE</div><div class="ind-val" style="font-size:11px;color:${ind.candlePattern==='bullish_reversal'?'var(--green)':ind.candlePattern==='bearish_reversal'?'var(--red)':'var(--muted)'}">${ind.candlePattern==='bullish_reversal'?'BULL REV':ind.candlePattern==='bearish_reversal'?'BEAR REV':'NONE'}</div><div class="ind-state">pattern</div></div>
-          <div class="ind-box"><div class="ind-name">SCORE</div><div class="ind-val" style="color:${cc(s.confidence)}">${s.bullScore}B/${s.bearScore}S</div><div class="ind-state">of 8 signals</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+          <!-- EMA200 -->
+          <div class="ind-box" style="border-color:${price>(ind.ema200||price)?'rgba(52,211,153,0.3)':'rgba(251,113,133,0.3)'}">
+            <div class="ind-name">① EMA 200</div>
+            <div class="ind-val" style="color:${price>(ind.ema200||price)?'var(--green)':'var(--red)'}">
+              ${price>(ind.ema200||price)?'ABOVE ▲':'BELOW ▼'}
+            </div>
+            <div class="ind-state">${fmt(p,ind.ema200||0)}</div>
+            <div class="ind-state" style="margin-top:3px;color:${price>(ind.ema200||price)?'var(--green)':'var(--red)'}">
+              ${price>(ind.ema200||price)?'→ BUY SIDE':'→ SELL SIDE'}
+            </div>
+          </div>
+          <!-- MACD -->
+          <div class="ind-box" style="border-color:${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)?'rgba(52,211,153,0.3)':(ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'rgba(251,113,133,0.3)':'var(--border)'}">
+            <div class="ind-name">② MACD FLIP</div>
+            <div class="ind-val" style="color:${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)?'var(--green)':(ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'var(--red)':'var(--muted)'}">
+              ${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)?'BULL FLIP':
+                (ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'BEAR FLIP':'NEUTRAL'}
+            </div>
+            <div class="ind-state">Hist: ${fmt(p,Math.abs(ind.macd?.hist||0))}</div>
+            <div class="ind-state" style="margin-top:3px">
+              ${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)?'→ BUY timing':
+                (ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'→ SELL timing':'→ Wait'}
+            </div>
+          </div>
+          <!-- RSI -->
+          <div class="ind-box" style="border-color:${(ind.rsi||50)>=40&&(ind.rsi||50)<=65?'rgba(52,211,153,0.3)':(ind.rsi||50)>=35&&(ind.rsi||50)<=60?'rgba(56,189,248,0.3)':'var(--border)'}">
+            <div class="ind-name">③ RSI 14</div>
+            <div class="ind-val" style="color:${(ind.rsi||50)<35?'var(--red)':(ind.rsi||50)>65?'var(--red)':'var(--green)'}">
+              ${ind.rsi??'—'}
+            </div>
+            <div class="ind-state">${(ind.rsi||50)<35?'OVERSOLD':(ind.rsi||50)>65?'OVERBOUGHT':(ind.rsi||50)>=40&&(ind.rsi||50)<=65?'BUY ZONE':(ind.rsi||50)>=35&&(ind.rsi||50)<=60?'SELL ZONE':'NEUTRAL'}</div>
+            <div class="ind-state" style="margin-top:3px;color:${(ind.rsi||50)>=40&&(ind.rsi||50)<=65||((ind.rsi||50)>=35&&(ind.rsi||50)<=60)?'var(--green)':'var(--muted)'}">
+              ${(ind.rsi||50)>=40&&(ind.rsi||50)<=65?'→ OK for BUY':(ind.rsi||50)>=35&&(ind.rsi||50)<=60?'→ OK for SELL':'→ Excluded'}
+            </div>
+          </div>
+        </div>
+        <!-- Signal requirement explainer -->
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:14px;line-height:1.8">
+          SIGNAL REQUIRES ALL 3: ①${price>(ind.ema200||price)?'✅':'❌'} EMA200 · ②${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)||(ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'✅':'❌'} MACD FLIP · ③${(ind.rsi||50)>=35&&(ind.rsi||50)<=65?'✅':'❌'} RSI IN ZONE
         </div>
 
         ${s.reasons.length?`<div class="reasons">${s.reasons.map(r=>`<div class="rtag ${r.b?'bullish':'bearish'}">${r.t}</div>`).join('')}</div>`:''}
@@ -2530,7 +2550,7 @@ function setStrategy(mode, btn){
   const info = document.getElementById('strategy-info');
   if(mode==='trend'){
     info.className='strategy-info trend';
-    info.innerHTML='<strong>Trend Following</strong> — Enters in the direction of momentum when 6/8 indicators agree. Works best in strongly trending markets. Uses ADX to filter out choppy conditions.';
+    info.innerHTML='<strong>Institutional Trend Following</strong> — EMA200 (institutional trend) + MACD flip (precise timing) + RSI zone (momentum confirmation). All 3 must agree. Fewer but much higher quality signals.';
   } else {
     info.className='strategy-info reversion';
     info.innerHTML='<strong>Mean Reversion</strong> — Buys when price is at the lower Bollinger Band extreme, sells at the upper extreme. Targets a return to the mean (middle band). Works best in ranging markets. Higher win rate, smaller individual wins.';
@@ -2559,7 +2579,7 @@ function setTimeframe(tf, btn){
 
   // Update subtitle
   const sub = document.getElementById('signals-sub');
-  if(sub) sub.textContent = `8-INDICATOR CONFLUENCE · ${TIMEFRAMES[tf].label} CANDLES · REAL PRICES`;
+  if(sub) sub.textContent = `3-INDICATOR CONFLUENCE · ${TIMEFRAMES[tf].label} CANDLES · REAL PRICES`;
 
   // Reset history so it re-fetches with new timeframe
   lastHistoryFetch = {};
