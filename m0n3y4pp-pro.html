@@ -294,6 +294,150 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 }
 .login-remember input{width:16px;height:16px;accent-color:var(--acc);cursor:pointer}
 .login-remember span{font-family:var(--mono);font-size:11px;color:var(--text2)}
+
+/* WEEKLY DANGER METER */
+.danger-meter{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:14px;padding:18px 22px;margin-bottom:20px;
+}
+.danger-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.danger-title{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+.danger-level{display:flex;align-items:center;gap:10px}
+.danger-badge{
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  padding:6px 16px;border-radius:20px;letter-spacing:1px;
+}
+.danger-badge.safe{background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3)}
+.danger-badge.caution{background:rgba(251,191,36,0.12);color:var(--amber);border:1px solid rgba(251,191,36,0.3)}
+.danger-badge.danger{background:rgba(251,113,133,0.12);color:var(--red);border:1px solid rgba(251,113,133,0.3)}
+.danger-badge.extreme{background:rgba(251,113,133,0.2);color:var(--red);border:2px solid var(--red);animation:pulseRed 1.5s infinite}
+@keyframes pulseRed{0%,100%{box-shadow:0 0 0 0 rgba(251,113,133,0.4)}50%{box-shadow:0 0 0 8px rgba(251,113,133,0)}}
+.danger-bar-wrap{display:flex;gap:3px;margin-bottom:10px}
+.danger-segment{flex:1;height:8px;border-radius:4px;background:var(--border2);transition:background .5s}
+.danger-segment.active.safe{background:var(--green)}
+.danger-segment.active.caution{background:var(--amber)}
+.danger-segment.active.danger{background:var(--red)}
+.danger-segment.active.extreme{background:var(--red)}
+.danger-advice{
+  font-family:var(--mono);font-size:12px;line-height:1.7;
+  padding:10px 14px;border-radius:8px;
+}
+.danger-advice.safe{background:rgba(52,211,153,0.06);color:var(--green);border:1px solid rgba(52,211,153,0.15)}
+.danger-advice.caution{background:rgba(251,191,36,0.06);color:var(--amber);border:1px solid rgba(251,191,36,0.15)}
+.danger-advice.danger{background:rgba(251,113,133,0.06);color:var(--red);border:1px solid rgba(251,113,133,0.15)}
+.danger-advice.extreme{background:rgba(251,113,133,0.1);color:var(--red);border:1px solid var(--red)}
+.danger-events-count{font-family:var(--mono);font-size:11px;color:var(--text2)}
+
+/* NEWS PAGE */
+.news-week-grid{display:flex;flex-direction:column;gap:8px}
+.news-day-group{background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.news-day-header{
+  padding:12px 18px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.news-day-label{font-family:var(--display);font-weight:700;font-size:15px}
+.news-day-count{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.news-event-row{
+  padding:11px 18px;display:flex;align-items:center;gap:14px;
+  border-bottom:1px solid var(--border);transition:background .15s;
+}
+.news-event-row:last-child{border-bottom:none}
+.news-event-row:hover{background:var(--s2)}
+.news-impact-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.news-impact-dot.high{background:var(--red);box-shadow:0 0 8px var(--red)}
+.news-impact-dot.medium{background:var(--amber)}
+.news-impact-dot.low{background:var(--green2)}
+.news-event-time{font-family:var(--mono);font-size:12px;color:var(--text2);width:70px;flex-shrink:0}
+.news-event-currency{font-family:var(--mono);font-size:12px;font-weight:700;width:36px;flex-shrink:0}
+.news-event-currency.usd{color:var(--acc)}
+.news-event-currency.eur{color:var(--purple)}
+.news-event-currency.gbp{color:var(--amber)}
+.news-event-name{flex:1;font-size:13px;color:var(--text)}
+.news-event-impact{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px}
+.news-event-impact.high{background:rgba(251,113,133,0.15);color:var(--red)}
+.news-event-impact.medium{background:rgba(251,191,36,0.12);color:var(--amber)}
+.news-event-impact.low{background:rgba(52,211,153,0.1);color:var(--green)}
+.news-avoid-tag{
+  font-family:var(--mono);font-size:10px;
+  background:rgba(251,113,133,0.1);color:var(--red);
+  border:1px solid rgba(251,113,133,0.2);
+  border-radius:4px;padding:2px 6px;flex-shrink:0;
+}
+.news-loading{padding:40px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px}
+
+/* NEXT SAFE WINDOW */
+.safe-window{
+  background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);
+  border-radius:12px;padding:14px 18px;margin-bottom:16px;
+  display:flex;align-items:center;gap:12px;
+}
+.safe-window-icon{font-size:24px}
+.safe-window-text{font-family:var(--mono);font-size:12px;line-height:1.7}
+.safe-window-text strong{color:var(--green);font-size:14px}
+
+/* TIMEFRAME SELECTOR */
+.tf-selector{display:flex;gap:6px;align-items:center}
+.tf-btn{
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  padding:5px 14px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border2);background:var(--s2);
+  color:var(--text2);letter-spacing:1px;transition:all .2s;
+}
+.tf-btn:hover{border-color:var(--purple);color:var(--purple)}
+.tf-btn.active{
+  background:rgba(167,139,250,0.12);
+  border-color:var(--purple);color:var(--purple);
+}
+
+/* BACKTEST PAGE */
+.bt-layout{display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start}
+.bt-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:24px}
+.bt-title{font-size:18px;font-weight:700;margin-bottom:20px}
+.bt-run-btn{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--green2),var(--green));
+  border:none;border-radius:12px;color:white;
+  font-family:var(--display);font-weight:700;font-size:16px;
+  cursor:pointer;transition:opacity .2s;margin-top:6px;
+}
+.bt-run-btn:hover{opacity:.9}
+.bt-run-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* RESULTS */
+.bt-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.bt-stat{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center}
+.bt-stat-val{font-family:var(--mono);font-size:22px;font-weight:700;margin-bottom:4px}
+.bt-stat-lbl{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+
+/* EQUITY CURVE */
+.bt-chart-wrap{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px}
+.bt-chart-title{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:14px;text-transform:uppercase}
+.bt-chart{height:180px;position:relative;background:var(--s2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.bt-chart canvas{display:block}
+
+/* TRADE LOG */
+.bt-log-wrap{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px}
+.bt-log-header{display:grid;grid-template-columns:1fr 80px 80px 70px 90px 80px;gap:8px;padding:8px 12px;background:var(--s2);border-radius:8px;margin-bottom:8px;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--muted)}
+.bt-log-rows{display:flex;flex-direction:column;gap:4px;max-height:400px;overflow-y:auto}
+.bt-log-row{display:grid;grid-template-columns:1fr 80px 80px 70px 90px 80px;gap:8px;padding:9px 12px;background:var(--s2);border-radius:8px;font-family:var(--mono);font-size:12px;border:1px solid var(--border);transition:background .15s}
+.bt-log-row:hover{background:var(--s3)}
+.bt-log-row.win{border-left:3px solid var(--green)}
+.bt-log-row.loss{border-left:3px solid var(--red)}
+.bt-log-row.be{border-left:3px solid var(--amber)}
+
+/* PROGRESS */
+.bt-progress-wrap{margin:16px 0}
+.bt-progress-bg{height:8px;background:var(--border2);border-radius:4px;overflow:hidden}
+.bt-progress-fill{height:100%;background:linear-gradient(90deg,var(--green2),var(--green));border-radius:4px;transition:width .3s;width:0%}
+.bt-progress-label{font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:6px;text-align:center}
+
+/* VERDICT */
+.bt-verdict{border-radius:12px;padding:16px 20px;margin-bottom:20px;font-family:var(--mono);font-size:13px;line-height:1.8}
+.bt-verdict.excellent{background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);color:var(--green)}
+.bt-verdict.good{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);color:var(--acc)}
+.bt-verdict.neutral{background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);color:var(--amber)}
+.bt-verdict.poor{background:rgba(251,113,133,0.08);border:1px solid rgba(251,113,133,0.2);color:var(--red)}
+.bt-empty{padding:60px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px;letter-spacing:1px;line-height:2}
 </style>
 </head>
 <body>
@@ -331,7 +475,11 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   <div class="logo-wrap">
     <div class="logo">FX<span>.</span>Pro</div>
     <div class="badge-pro">SWING</div>
-    <div class="timeframe-badge">4H CANDLES</div>
+    <div class="tf-selector">
+      <button class="tf-btn" id="tf-5min" onclick="setTimeframe('5min',this)">5M</button>
+      <button class="tf-btn" id="tf-1h"   onclick="setTimeframe('1h',this)">1H</button>
+      <button class="tf-btn active" id="tf-4h" onclick="setTimeframe('4h',this)">4H</button>
+    </div>
   </div>
   <div class="hdr-right">
     <div class="api-badge">API: <span id="api-label">Twelve Data</span></div>
@@ -359,15 +507,24 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alerts
       <span id="alert-badge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:11px;font-family:var(--mono);padding:2px 7px;border-radius:10px"></span>
     </button>
+    <button class="nav-item" onclick="showPage('news',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6z"/></svg>News Calendar
+      <span id="news-badge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:11px;font-family:var(--mono);padding:2px 7px;border-radius:10px">!</span>
+    </button>
+    <button class="nav-item" onclick="showPage('backtest',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Backtest
+    </button>
     <div class="nav-divider"></div>
     <div class="nav-info">
-      📊 4-Hour candles<br>
+      📊 5M / 1H / 4H candles<br>
       📈 Daily trend filter<br>
       🎯 Support &amp; resistance<br>
-      📰 News calendar<br>
+      📰 Weekly news calendar<br>
+      🚦 Danger level meter<br>
       📉 Confidence history<br>
       💪 Momentum score<br>
       ⚡ ATR trade plans<br>
+      🔬 Strategy backtester<br>
       🔄 Smart API fetching
     </div>
   </div>
@@ -393,8 +550,31 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="sec-hdr">
         <div>
           <div class="sec-title">Live Signals</div>
-          <div class="sec-sub">7-INDICATOR CONFLUENCE · 4H CANDLES · REAL PRICES</div>
+          <div class="sec-sub" id="signals-sub">7-INDICATOR CONFLUENCE · 4H CANDLES · REAL PRICES</div>
         </div>
+      </div>
+      <!-- Weekly Danger Meter -->
+      <div class="danger-meter" id="danger-meter">
+        <div class="danger-header">
+          <div>
+            <div class="danger-title">📊 Weekly Trading Danger Level</div>
+            <div class="danger-events-count" id="danger-events-count">Loading news calendar...</div>
+          </div>
+          <div class="danger-badge safe" id="danger-badge">LOADING</div>
+        </div>
+        <div class="danger-bar-wrap" id="danger-bar-wrap">
+          <div class="danger-segment" id="ds0"></div>
+          <div class="danger-segment" id="ds1"></div>
+          <div class="danger-segment" id="ds2"></div>
+          <div class="danger-segment" id="ds3"></div>
+          <div class="danger-segment" id="ds4"></div>
+          <div class="danger-segment" id="ds5"></div>
+          <div class="danger-segment" id="ds6"></div>
+          <div class="danger-segment" id="ds7"></div>
+          <div class="danger-segment" id="ds8"></div>
+          <div class="danger-segment" id="ds9"></div>
+        </div>
+        <div class="danger-advice safe" id="danger-advice">Checking economic calendar...</div>
       </div>
       <!-- Daily trend bar -->
       <div class="trend-bar" id="trend-bar"></div>
@@ -471,6 +651,106 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="alert-list" id="alert-list"><div class="empty">NO ALERTS YET — WAITING FOR SIGNALS</div></div>
     </div>
 
+    <!-- PAGE: BACKTEST -->
+    <div class="page" id="page-backtest">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-title">Strategy Backtester</div>
+          <div class="sec-sub">TEST YOUR SIGNALS ON REAL HISTORICAL DATA · UP TO 2.5 YEARS</div>
+        </div>
+      </div>
+      <div class="bt-layout">
+        <!-- LEFT: CONFIG -->
+        <div>
+          <div class="bt-card">
+            <div class="bt-title">Backtest Settings</div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Currency Pair</div>
+              <select class="form-select" id="bt-pair">
+                <option value="EUR/USD">EUR/USD</option>
+                <option value="GBP/USD">GBP/USD</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Timeframe</div>
+              <select class="form-select" id="bt-tf">
+                <option value="5min">5 Minutes (~17 days)</option>
+                <option value="1h">1 Hour (~7 months)</option>
+                <option value="4h" selected>4 Hours (~2.5 years)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Starting Balance ($)</div>
+              <input class="form-input" id="bt-balance" type="number" value="1000">
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Risk Per Trade (%)</div>
+              <input class="form-input" id="bt-risk" type="number" value="1" step="0.5">
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Min Confidence to Trade (%)</div>
+              <select class="form-select" id="bt-conf">
+                <option value="50">50% — Medium &amp; above</option>
+                <option value="70" selected>70% — High confidence only</option>
+                <option value="85">85% — Very high only</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Trend Filter</div>
+              <select class="form-select" id="bt-trend">
+                <option value="true" selected>ON — Only trend-aligned signals</option>
+                <option value="false">OFF — All signals</option>
+              </select>
+            </div>
+            <button class="bt-run-btn" id="bt-run-btn" onclick="runBacktest()">▶ RUN BACKTEST</button>
+            <div class="bt-progress-wrap" id="bt-progress" style="display:none">
+              <div class="bt-progress-bg"><div class="bt-progress-fill" id="bt-progress-fill"></div></div>
+              <div class="bt-progress-label" id="bt-progress-label">Fetching historical data...</div>
+            </div>
+          </div>
+
+          <div class="bt-card" style="margin-top:16px" id="bt-info-card">
+            <div class="bt-title" style="font-size:15px">How It Works</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:2">
+              📥 Fetches max historical candles<br>
+              🔄 Runs all 7 indicators on each bar<br>
+              📊 Simulates BUY/SELL on signal changes<br>
+              🛑 Applies ATR-based SL + TP1 + TP2<br>
+              💰 Tracks P&L bar by bar<br>
+              📈 Shows equity curve + trade log<br>
+              <br>
+              <span style="color:var(--amber)">⚠️ Past performance does not guarantee future results. Always paper trade before going live.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: RESULTS -->
+        <div id="bt-results">
+          <div class="bt-empty">
+            📊 Configure your settings and click<br>
+            <strong style="color:var(--acc)">RUN BACKTEST</strong><br>
+            to test the strategy on historical data
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: NEWS CALENDAR -->
+    <div class="page" id="page-news">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-title">News Calendar</div>
+          <div class="sec-sub">THIS WEEK'S HIGH IMPACT EVENTS · AVOID TRADING 2HRS BEFORE/AFTER RED</div>
+        </div>
+        <button class="form-btn" style="width:auto;padding:10px 20px;font-size:14px" onclick="fetchWeeklyNews()">🔄 Refresh</button>
+      </div>
+      <div class="safe-window" id="safe-window" style="display:none">
+        <div class="safe-window-icon">✅</div>
+        <div class="safe-window-text" id="safe-window-text"></div>
+      </div>
+      <div id="news-week-container"><div class="news-loading">📰 Loading this week's economic calendar...</div></div>
+    </div>
+
   </div>
 </div>
 
@@ -482,10 +762,17 @@ let API_KEY = ''; // set by user at login
 const PAIRS        = ['EUR/USD','GBP/USD'];
 const DECIMALS     = {'EUR/USD':4,'GBP/USD':4};
 const PIP_VAL      = {'EUR/USD':10,'GBP/USD':10};
-const MIN_SL_PIPS  = {'EUR/USD':20,'GBP/USD':25};
+// MIN_SL_PIPS now dynamic — see TIMEFRAMES config above
 const REFRESH_QUOTE   = 60000;    // price every 60s — 1 call/pair
-const REFRESH_HISTORY = 3600000;  // 4h history every 60min — 1 call/pair
 const REFRESH_DAILY   = 7200000;  // daily candles every 2hrs — 1 call/pair
+
+// Timeframe config — changes when user switches
+const TIMEFRAMES = {
+  '5min': { label:'5M',  interval:'5min', outputsize:60,  refreshHistory:1800000,  minSLpips:{'EUR/USD':10,'GBP/USD':12} },
+  '1h':   { label:'1H',  interval:'1h',   outputsize:60,  refreshHistory:3600000,  minSLpips:{'EUR/USD':15,'GBP/USD':18} },
+  '4h':   { label:'4H',  interval:'4h',   outputsize:60,  refreshHistory:3600000,  minSLpips:{'EUR/USD':20,'GBP/USD':25} },
+};
+let currentTF = '4h'; // default
 
 // ═══════════════════════════════════════════════
 // STATE
@@ -518,35 +805,638 @@ PAIRS.forEach(p=>{
 });
 
 // ═══════════════════════════════════════════════
-// UPGRADE 4 — ECONOMIC CALENDAR
+// BACKTESTER ENGINE
 // ═══════════════════════════════════════════════
-async function fetchNewsCalendar(){
+
+async function fetchBacktestData(pair, tf){
+  const tfMap = {'5min':'5min','1h':'1h','4h':'4h'};
+  const sym = encodeURIComponent(pair);
+  const url = `https://api.twelvedata.com/time_series?symbol=${sym}&interval=${tfMap[tf]}&outputsize=5000&apikey=${API_KEY}&format=JSON`;
+  const r = await fetch(url);
+  const d = await r.json();
+  if(d.status==='error'||!d.values) throw new Error(d.message||'Backtest data error');
+  // Return oldest first with full OHLC
+  return d.values.reverse().map(v=>({
+    date: v.datetime,
+    open: parseFloat(v.open),
+    high: parseFloat(v.high),
+    low:  parseFloat(v.low),
+    close:parseFloat(v.close),
+  }));
+}
+
+function setProgress(pct, label){
+  const fill = document.getElementById('bt-progress-fill');
+  const lbl  = document.getElementById('bt-progress-label');
+  if(fill) fill.style.width = pct+'%';
+  if(lbl)  lbl.textContent  = label;
+}
+
+async function runBacktest(){
+  const pair    = document.getElementById('bt-pair').value;
+  const tf      = document.getElementById('bt-tf').value;
+  const balance = parseFloat(document.getElementById('bt-balance').value)||1000;
+  const riskPct = parseFloat(document.getElementById('bt-risk').value)||1;
+  const minConf = parseInt(document.getElementById('bt-conf').value)||70;
+  const useTrend= document.getElementById('bt-trend').value==='true';
+
+  const btn = document.getElementById('bt-run-btn');
+  const prog= document.getElementById('bt-progress');
+  const res = document.getElementById('bt-results');
+
+  btn.disabled=true; btn.textContent='Running...';
+  prog.style.display='block';
+  res.innerHTML='<div class="bt-empty">⏳ Fetching historical data from Twelve Data...</div>';
+  setProgress(5,'Fetching historical candles...');
+
   try{
-    // Use Twelve Data economic calendar endpoint
-    const today = new Date().toISOString().split('T')[0];
-    const url = `https://api.twelvedata.com/economic_calendar?start_date=${today}&end_date=${today}&apikey=${API_KEY}&format=JSON`;
+    // Fetch historical data
+    const candles = await fetchBacktestData(pair, tf);
+    setProgress(20, `Loaded ${candles.length} candles · Running signals...`);
+
+    // Need at least 60 bars for indicators to warm up
+    const warmup = 60;
+    if(candles.length < warmup+10){
+      throw new Error('Not enough historical data returned');
+    }
+
+    // PIP unit
+    const pipU = 0.0001;
+    const minSLpips = tf==='5min'?10:tf==='1h'?15:20;
+    const pipVal = PIP_VAL[pair]||10;
+
+    // Run backtest bar by bar
+    const trades     = [];
+    let   equity     = balance;
+    const equityCurve= [balance];
+    let   inTrade    = null;  // current open trade
+    let   prevSig    = 'neutral';
+    let   processed  = 0;
+
+    for(let i=warmup; i<candles.length; i++){
+      // Build price history up to this bar
+      const h = candles.slice(Math.max(0,i-100), i+1).map(c=>c.close);
+      const bar = candles[i];
+      processed++;
+
+      // Update progress every 100 bars
+      if(processed%100===0){
+        const pct = 20 + Math.round((processed/(candles.length-warmup))*60);
+        setProgress(pct, `Processing bar ${processed} of ${candles.length-warmup}...`);
+        // Yield to browser to keep UI responsive
+        await new Promise(r=>setTimeout(r,0));
+      }
+
+      // If in a trade, check if SL or TP was hit this bar
+      if(inTrade){
+        const {signal, sl, tp1, tp2, entry, lotSize, pipUnit} = inTrade;
+        let exitPrice = null;
+        let exitType  = null;
+
+        if(signal==='buy'){
+          if(bar.low<=sl){
+            exitPrice=sl; exitType='sl';
+          } else if(!inTrade.tp1Hit && bar.high>=tp1){
+            // TP1 hit — close 50%, move SL to entry
+            inTrade.tp1Hit=true;
+            inTrade.sl=entry; // breakeven
+            const pip1 = Math.round((tp1-entry)/pipUnit);
+            const profit1 = pip1*pipVal*lotSize*0.5;
+            equity+=profit1;
+            inTrade.partialProfit=profit1;
+          } else if(inTrade.tp1Hit && bar.high>=tp2){
+            exitPrice=tp2; exitType='tp2';
+          }
+        } else { // sell
+          if(bar.high>=sl){
+            exitPrice=sl; exitType='sl';
+          } else if(!inTrade.tp1Hit && bar.low<=tp1){
+            inTrade.tp1Hit=true;
+            inTrade.sl=entry;
+            const pip1 = Math.round((entry-tp1)/pipUnit);
+            const profit1 = pip1*pipVal*lotSize*0.5;
+            equity+=profit1;
+            inTrade.partialProfit=profit1;
+          } else if(inTrade.tp1Hit && bar.low<=tp2){
+            exitPrice=tp2; exitType='tp2';
+          }
+        }
+
+        // Close trade if exit triggered
+        if(exitPrice){
+          const pips = signal==='buy'
+            ? Math.round((exitPrice-entry)/pipUnit)
+            : Math.round((entry-exitPrice)/pipUnit);
+          const remainingSize = inTrade.tp1Hit ? 0.5 : 1.0;
+          const pnl = pips*pipVal*lotSize*remainingSize + (inTrade.partialProfit||0);
+          equity += (pips*pipVal*lotSize*remainingSize);
+          const result = exitType==='sl'?'loss':exitType==='tp2'?'win':'win';
+
+          trades.push({
+            date:   inTrade.date,
+            pair,
+            signal: inTrade.signal,
+            entry:  entry.toFixed(4),
+            exit:   exitPrice.toFixed(4),
+            pips:   pips + (inTrade.tp1Hit?'+TP1':''),
+            pnl:    parseFloat(pnl.toFixed(2)),
+            result,
+            equity: parseFloat(equity.toFixed(2)),
+            tf,
+          });
+          equityCurve.push(parseFloat(equity.toFixed(2)));
+          inTrade=null;
+        }
+        prevSig=inTrade?inTrade.signal:'neutral';
+        continue;
+      }
+
+      // Compute signal on this bar's history
+      const rsi   = calcRSI(h);
+      const ma50  = calcEMA(h,Math.min(50,h.length));
+      const ma20  = calcEMA(h,Math.min(20,h.length));
+      const ma10  = calcEMA(h,Math.min(10,h.length));
+      const macd  = calcMACD(h);
+      const bb    = calcBB(h);
+      const stoch = calcStoch(h);
+      const atr   = calcATR(h);
+      const mom   = calcMomentum(h);
+      const price = bar.close;
+
+      let bull=0,bear=0;
+      if(rsi<40) bull++; else if(rsi>60) bear++;
+      if(ma10>ma20&&ma20>ma50) bull++; else if(ma10<ma20&&ma20<ma50) bear++;
+      if(price>ma50) bull++; else bear++;
+      if(macd.macd>macd.signal) bull++; else bear++;
+      if(price<bb.lower) bull++; else if(price>bb.upper) bear++;
+      if(stoch<25) bull++; else if(stoch>75) bear++;
+      if(mom>60) bull++; else if(mom<40) bear++;
+
+      let sig='neutral', conf=0;
+      if(bull>=5){sig='buy'; conf=Math.round(bull/7*100);}
+      else if(bear>=5){sig='sell'; conf=Math.round(bear/7*100);}
+      else{conf=Math.round(Math.max(bull,bear)/7*100);}
+
+      // Trend filter using daily EMA approximation
+      // (use 50-bar MA on this timeframe as proxy for trend)
+      const trendBull = ma10>ma50;
+      const trendAligned = !useTrend ||
+        (sig==='buy'&&trendBull)||(sig==='sell'&&!trendBull)||(sig==='neutral');
+
+      // Open trade if signal changed and meets criteria
+      if(sig!=='neutral' && sig!==prevSig && conf>=minConf && trendAligned){
+        const slDist   = Math.max(atr*1.5, minSLpips*pipU);
+        const slPips   = Math.round(slDist/pipU);
+        const tp1Pips  = Math.round(slPips*1.5);
+        const tp2Pips  = Math.round(slPips*3);
+        const riskAmt  = equity*riskPct/100;
+        const lotSize  = Math.max(0.01, Math.floor(riskAmt/(slPips*pipVal)*100)/100);
+
+        const sl  = sig==='buy'? price-slDist : price+slDist;
+        const tp1 = sig==='buy'? price+tp1Pips*pipU : price-tp1Pips*pipU;
+        const tp2 = sig==='buy'? price+tp2Pips*pipU : price-tp2Pips*pipU;
+
+        inTrade = {
+          signal:sig, entry:price, sl, tp1, tp2,
+          lotSize, pipUnit:pipU,
+          date: bar.date,
+          tp1Hit:false, partialProfit:0,
+        };
+      }
+      prevSig=sig;
+    }
+
+    setProgress(90,'Calculating results...');
+    await new Promise(r=>setTimeout(r,0));
+
+    // Calculate stats
+    const wins      = trades.filter(t=>t.result==='win');
+    const losses    = trades.filter(t=>t.result==='loss');
+    const winRate   = trades.length? Math.round(wins.length/trades.length*100):0;
+    const totalPnl  = trades.reduce((a,t)=>a+t.pnl,0);
+    const avgWin    = wins.length? wins.reduce((a,t)=>a+t.pnl,0)/wins.length:0;
+    const avgLoss   = losses.length? Math.abs(losses.reduce((a,t)=>a+t.pnl,0)/losses.length):0;
+    const profitFactor = avgLoss>0? (avgWin*wins.length/(avgLoss*losses.length||1)):avgWin>0?999:0;
+    const maxDD     = calcMaxDrawdown(equityCurve);
+    const finalBal  = parseFloat((balance+totalPnl).toFixed(2));
+    const returnPct = parseFloat(((totalPnl/balance)*100).toFixed(1));
+
+    setProgress(100,'Done!');
+    await new Promise(r=>setTimeout(r,200));
+
+    renderBacktestResults({
+      pair, tf, trades, equityCurve, balance, finalBal,
+      winRate, totalPnl, profitFactor, maxDD, returnPct,
+      avgWin, avgLoss, wins, losses, minConf, useTrend,
+    });
+
+  } catch(err){
+    res.innerHTML=`<div class="bt-empty" style="color:var(--red)">❌ Backtest failed:<br>${err.message}<br><br>Check your API key and try again.</div>`;
+  }
+
+  btn.disabled=false; btn.textContent='▶ RUN BACKTEST';
+  prog.style.display='none';
+}
+
+function calcMaxDrawdown(curve){
+  let peak=curve[0], maxDD=0;
+  for(const v of curve){
+    if(v>peak) peak=v;
+    const dd=(peak-v)/peak*100;
+    if(dd>maxDD) maxDD=dd;
+  }
+  return parseFloat(maxDD.toFixed(1));
+}
+
+function renderBacktestResults(r){
+  const res = document.getElementById('bt-results');
+
+  // Verdict
+  let verdictCls, verdictText;
+  if(r.profitFactor>=2 && r.winRate>=55){
+    verdictCls='excellent';
+    verdictText=`🏆 EXCELLENT STRATEGY — Profit Factor ${r.profitFactor.toFixed(2)} with ${r.winRate}% win rate. This strategy shows strong historical edge on ${r.pair} ${r.tf} candles. Consider paper trading for 1-2 months to validate before going live.`;
+  } else if(r.profitFactor>=1.3 && r.winRate>=45){
+    verdictCls='good';
+    verdictText=`✅ GOOD STRATEGY — Profit Factor ${r.profitFactor.toFixed(2)} with ${r.winRate}% win rate. Positive historical edge detected. Continue paper trading and monitor live performance carefully.`;
+  } else if(r.profitFactor>=1.0){
+    verdictCls='neutral';
+    verdictText=`⚠️ MARGINAL STRATEGY — Profit Factor ${r.profitFactor.toFixed(2)} with ${r.winRate}% win rate. Slight edge but not convincing. Consider adjusting confidence threshold or timeframe. Keep paper trading.`;
+  } else {
+    verdictCls='poor';
+    verdictText=`❌ POOR HISTORICAL PERFORMANCE — Profit Factor ${r.profitFactor.toFixed(2)} with ${r.winRate}% win rate. This combination of settings did not show edge on historical data. Try higher confidence threshold or different timeframe.`;
+  }
+
+  res.innerHTML = `
+    <!-- VERDICT -->
+    <div class="bt-verdict ${verdictCls}">${verdictText}</div>
+
+    <!-- STATS -->
+    <div class="bt-stats-grid">
+      <div class="bt-stat">
+        <div class="bt-stat-val" style="color:${r.winRate>=50?'var(--green)':'var(--red)'}">${r.winRate}%</div>
+        <div class="bt-stat-lbl">Win Rate</div>
+      </div>
+      <div class="bt-stat">
+        <div class="bt-stat-val" style="color:${r.profitFactor>=1.3?'var(--green)':r.profitFactor>=1?'var(--amber)':'var(--red)'}">${r.profitFactor===999?'∞':r.profitFactor.toFixed(2)}</div>
+        <div class="bt-stat-lbl">Profit Factor</div>
+      </div>
+      <div class="bt-stat">
+        <div class="bt-stat-val" style="color:${r.totalPnl>=0?'var(--green)':'var(--red)'}">${r.totalPnl>=0?'+':''}$${r.totalPnl.toFixed(0)}</div>
+        <div class="bt-stat-lbl">Total P&L</div>
+      </div>
+      <div class="bt-stat">
+        <div class="bt-stat-val">${r.trades.length}</div>
+        <div class="bt-stat-lbl">Total Trades</div>
+      </div>
+      <div class="bt-stat">
+        <div class="bt-stat-val" style="color:${r.returnPct>=0?'var(--green)':'var(--red)'}">${r.returnPct>=0?'+':''}${r.returnPct}%</div>
+        <div class="bt-stat-lbl">Return</div>
+      </div>
+      <div class="bt-stat">
+        <div class="bt-stat-val" style="color:var(--red)">-${r.maxDD}%</div>
+        <div class="bt-stat-lbl">Max Drawdown</div>
+      </div>
+      <div class="bt-stat">
+        <div class="bt-stat-val" style="color:var(--green)">+$${r.avgWin.toFixed(1)}</div>
+        <div class="bt-stat-lbl">Avg Win</div>
+      </div>
+      <div class="bt-stat">
+        <div class="bt-stat-val" style="color:var(--red)">-$${r.avgLoss.toFixed(1)}</div>
+        <div class="bt-stat-lbl">Avg Loss</div>
+      </div>
+    </div>
+
+    <!-- EQUITY CURVE -->
+    <div class="bt-chart-wrap">
+      <div class="bt-chart-title">📈 Equity Curve — Starting $${r.balance.toLocaleString()} → Final $${r.finalBal.toLocaleString()}</div>
+      <div class="bt-chart" id="bt-equity-chart">
+        <canvas id="bt-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- TRADE LOG -->
+    <div class="bt-log-wrap">
+      <div class="bt-chart-title">📋 Trade Log — ${r.trades.length} trades (${r.wins.length} wins · ${r.losses.length} losses)</div>
+      <div class="bt-log-header">
+        <span>Date</span><span>Dir</span><span>Entry</span><span>Pips</span><span>P&L</span><span>Balance</span>
+      </div>
+      <div class="bt-log-rows">
+        ${r.trades.slice().reverse().map(t=>`
+          <div class="bt-log-row ${t.result}">
+            <span style="color:var(--text2);font-size:11px">${t.date.split(' ')[0]}</span>
+            <span style="color:${t.signal==='buy'?'var(--green)':'var(--red)'}">${t.signal.toUpperCase()}</span>
+            <span>${t.entry}</span>
+            <span style="color:${String(t.pips).includes('-')?'var(--red)':'var(--green)'}">${t.pips}</span>
+            <span style="color:${t.pnl>=0?'var(--green)':'var(--red)'}">${t.pnl>=0?'+':''}$${t.pnl}</span>
+            <span style="color:var(--text2)">$${t.equity}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // Draw equity curve
+  requestAnimationFrame(()=>drawEquityCurve(r.equityCurve, r.balance));
+}
+
+function drawEquityCurve(curve, startBalance){
+  const canvas = document.getElementById('bt-canvas');
+  if(!canvas) return;
+  const wrap = document.getElementById('bt-equity-chart');
+  canvas.width  = wrap.offsetWidth;
+  canvas.height = wrap.offsetHeight;
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const pad=12;
+
+  if(curve.length<2) return;
+  const min=Math.min(...curve), max=Math.max(...curve);
+  const range=max-min||1;
+
+  const toX=i=>pad+(i/(curve.length-1))*(W-pad*2);
+  const toY=v=>H-pad-((v-min)/range)*(H-pad*2);
+
+  // Zero line
+  const zeroY=toY(startBalance);
+  ctx.strokeStyle='rgba(255,255,255,0.08)';
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(0,zeroY);ctx.lineTo(W,zeroY);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Gradient fill
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  const isProfit=curve[curve.length-1]>=startBalance;
+  grad.addColorStop(0, isProfit?'rgba(52,211,153,0.25)':'rgba(251,113,133,0.25)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(toX(0),H);
+  curve.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)));
+  ctx.lineTo(toX(curve.length-1),H);
+  ctx.closePath();
+  ctx.fillStyle=grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  curve.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));
+  ctx.strokeStyle=isProfit?'var(--green)':'var(--red)';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  // Start/End dots
+  ctx.beginPath();ctx.arc(toX(0),toY(curve[0]),4,0,Math.PI*2);
+  ctx.fillStyle='var(--text2)';ctx.fill();
+  ctx.beginPath();ctx.arc(toX(curve.length-1),toY(curve[curve.length-1]),5,0,Math.PI*2);
+  ctx.fillStyle=isProfit?'var(--green)':'var(--red)';ctx.fill();
+}
+
+// ═══════════════════════════════════════════════
+// NEWS CALENDAR — WEEKLY + DANGER METER
+// ═══════════════════════════════════════════════
+
+let weeklyNews = [];      // all events this week
+let todayNews  = [];      // events today
+let dangerLevel = 0;      // 0-10
+
+// High impact events that directly affect EUR/USD and GBP/USD
+const KEY_EVENTS = [
+  'CPI','inflation','NFP','non-farm','payroll','Fed','FOMC','rate decision',
+  'rate hike','rate cut','GDP','PMI','employment','jobless','retail sales',
+  'Powell','Lagarde','BOE','ECB','central bank','interest rate',
+  'consumer price','producer price','PPI','PCE','trade balance'
+];
+
+function isKeyEvent(name){
+  const n = (name||'').toLowerCase();
+  return KEY_EVENTS.some(k => n.includes(k.toLowerCase()));
+}
+
+async function fetchWeeklyNews(){
+  try{
+    // Get start and end of current week (Mon-Fri)
+    const now = new Date();
+    const day = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (day===0?6:day-1));
+    monday.setHours(0,0,0,0);
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate()+4);
+    friday.setHours(23,59,59,999);
+
+    const start = monday.toISOString().split('T')[0];
+    const end   = friday.toISOString().split('T')[0];
+
+    const url = `https://api.twelvedata.com/economic_calendar?start_date=${start}&end_date=${end}&apikey=${API_KEY}&format=JSON`;
     const r = await fetch(url);
     const d = await r.json();
-    if(!d.result) return;
 
-    // Filter for high/medium impact USD, EUR, GBP events
+    if(!d.result) throw new Error('No calendar data');
+
+    // Filter for relevant currencies only
     const relevant = (d.result||[]).filter(e=>{
       const currencies = ['USD','EUR','GBP'];
-      const impacts = ['High','Medium'];
-      return currencies.includes(e.country) && impacts.includes(e.importance);
+      return currencies.includes(e.country);
     });
 
-    // Check if any events are within the next 2 hours or past 30 min
-    const now = Date.now();
-    newsEvents = relevant.filter(e=>{
-      try{
-        const t = new Date(e.date).getTime();
-        return (t - now) < 7200000 && (now - t) < 1800000;
-      }catch(x){ return false; }
-    });
+    weeklyNews = relevant.sort((a,b)=>new Date(a.date)-new Date(b.date));
 
-    renderNewsBanner();
-  } catch(e){ console.warn('News calendar error:', e.message); }
+    // Get today's events
+    const todayStr = new Date().toISOString().split('T')[0];
+    todayNews = weeklyNews.filter(e=>(e.date||'').startsWith(todayStr));
+
+    // Calculate danger level
+    computeDangerLevel();
+    renderDangerMeter();
+    renderWeeklyCalendar();
+    renderTodayNewsBanner();
+
+  } catch(e){
+    console.warn('News calendar error:', e.message);
+    renderDangerMeter(true);
+  }
+}
+
+function computeDangerLevel(){
+  // Score based on high impact events this week
+  const highCount = weeklyNews.filter(e=>e.importance==='High').length;
+  const medCount  = weeklyNews.filter(e=>e.importance==='Medium').length;
+  const keyCount  = weeklyNews.filter(e=>isKeyEvent(e.event)).length;
+
+  // Raw score
+  let score = (highCount * 2) + (medCount * 0.5) + (keyCount * 1.5);
+
+  // Cap at 10
+  dangerLevel = Math.min(10, Math.round(score));
+
+  // Check if there's a high impact event TODAY
+  const todayHigh = todayNews.filter(e=>e.importance==='High').length;
+  if(todayHigh>=2) dangerLevel = Math.max(dangerLevel, 8);
+  if(todayHigh>=3) dangerLevel = 10;
+}
+
+function getDangerClass(level){
+  if(level<=2) return 'safe';
+  if(level<=5) return 'caution';
+  if(level<=7) return 'danger';
+  return 'extreme';
+}
+
+function getDangerLabel(level){
+  if(level<=2) return '✅ SAFE TO TRADE';
+  if(level<=5) return '⚠️ TRADE WITH CAUTION';
+  if(level<=7) return '🚫 HIGH RISK WEEK';
+  return '🔴 EXTREME DANGER — AVOID';
+}
+
+function getDangerAdvice(level, cls){
+  if(cls==='safe') return '✅ Good week to trade. News risk is low. Focus on HIGH CONF signals during the London/NY overlap (7–11 AM CDT).';
+  if(cls==='caution') return '⚠️ Moderate news week. Check the News Calendar tab before every trade. Avoid trading 2 hours before and after red events.';
+  if(cls==='danger') return '🚫 High risk week. Multiple major events can cause sudden 50-100 pip spikes. Consider reducing position size by 50% or sitting this week out.';
+  return '🔴 EXTREME DANGER. This is one of the worst weeks to trade. Central bank decisions or major data releases can reverse the market in seconds. Strongly recommend NO trading this week — watch and learn instead.';
+}
+
+function renderDangerMeter(error=false){
+  const badge   = document.getElementById('danger-badge');
+  const advice  = document.getElementById('danger-advice');
+  const count   = document.getElementById('danger-events-count');
+  const newsBadge = document.getElementById('news-badge');
+
+  if(error){
+    badge.textContent='UNKNOWN';badge.className='danger-badge caution';
+    advice.textContent='Could not load calendar. Check manually at forexfactory.com';
+    advice.className='danger-advice caution';
+    return;
+  }
+
+  const cls   = getDangerClass(dangerLevel);
+  const label = getDangerLabel(dangerLevel);
+  const adv   = getDangerAdvice(dangerLevel, cls);
+
+  badge.textContent  = label;
+  badge.className    = `danger-badge ${cls}`;
+  advice.textContent = adv;
+  advice.className   = `danger-advice ${cls}`;
+
+  const highCount = weeklyNews.filter(e=>e.importance==='High').length;
+  const medCount  = weeklyNews.filter(e=>e.importance==='Medium').length;
+  count.textContent = `${highCount} high impact · ${medCount} medium impact events this week · Danger score: ${dangerLevel}/10`;
+
+  // Fill danger bar segments
+  for(let i=0;i<10;i++){
+    const seg = document.getElementById('ds'+i);
+    if(!seg) continue;
+    if(i<dangerLevel){
+      seg.className=`danger-segment active ${cls}`;
+    } else {
+      seg.className='danger-segment';
+    }
+  }
+
+  // Show red badge on nav if danger >= 7
+  if(dangerLevel>=7){
+    newsBadge.style.display='inline';
+    newsBadge.textContent='!';
+  } else {
+    newsBadge.style.display='none';
+  }
+}
+
+function renderTodayNewsBanner(){
+  // Show banner for events within next 2 hours or past 30 min
+  const now = Date.now();
+  const imminent = todayNews.filter(e=>{
+    try{
+      const t = new Date(e.date).getTime();
+      return (t-now)<7200000 && (now-t)<1800000 && e.importance==='High';
+    }catch(x){return false;}
+  });
+
+  const banner = document.getElementById('news-banner');
+  const items  = document.getElementById('news-items');
+
+  if(!imminent.length){ banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  items.innerHTML = imminent.map(e=>`
+    <div class="news-item">
+      <span class="news-impact ${(e.importance||'').toLowerCase()}">${(e.importance||'').toUpperCase()}</span>
+      <span style="color:var(--text);font-weight:600">${e.event||e.title||'Economic Event'}</span>
+      <span style="color:var(--muted)">${e.country} · ${new Date(e.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} local</span>
+    </div>`).join('');
+}
+
+function renderWeeklyCalendar(){
+  const container = document.getElementById('news-week-container');
+  if(!weeklyNews.length){
+    container.innerHTML='<div class="news-loading">No events found for this week.</div>';
+    return;
+  }
+
+  // Group by day
+  const byDay = {};
+  weeklyNews.forEach(e=>{
+    const day = (e.date||'').split('T')[0];
+    if(!byDay[day]) byDay[day]=[];
+    byDay[day].push(e);
+  });
+
+  // Find next safe trading window (no high events in next 2 hours)
+  const now = Date.now();
+  const nextHigh = weeklyNews
+    .filter(e=>e.importance==='High' && new Date(e.date).getTime()>now)
+    .sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+
+  // Safe window display
+  const safeWindow = document.getElementById('safe-window');
+  const safeText   = document.getElementById('safe-window-text');
+  if(nextHigh){
+    const t = new Date(nextHigh.date);
+    const safe2hrBefore = new Date(t.getTime()-7200000);
+    const safeAfter     = new Date(t.getTime()+1800000);
+    safeWindow.style.display='flex';
+    safeText.innerHTML = `<strong>Next HIGH impact event:</strong> ${nextHigh.event||'Major Event'} (${nextHigh.country}) at ${t.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}<br>⛔ Avoid trading from <strong>${safe2hrBefore.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong> until <strong>${safeAfter.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong> on that day`;
+  } else {
+    safeWindow.style.display='flex';
+    safeText.innerHTML='<strong>✅ No upcoming high impact events found.</strong> Safe to trade during the London/NY overlap (7–11 AM CDT).';
+  }
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  container.innerHTML = Object.entries(byDay).map(([date,events])=>{
+    const d = new Date(date+'T12:00:00');
+    const dayName = days[d.getDay()];
+    const dateLabel = d.toLocaleDateString([],{month:'short',day:'numeric'});
+    const highCount = events.filter(e=>e.importance==='High').length;
+
+    return `
+      <div class="news-day-group">
+        <div class="news-day-header">
+          <div class="news-day-label">${dayName} · ${dateLabel}
+            ${highCount>0?`<span style="font-family:var(--mono);font-size:11px;color:var(--red);margin-left:8px">🔴 ${highCount} high impact</span>`:''}
+          </div>
+          <div class="news-day-count">${events.length} events</div>
+        </div>
+        ${events.filter(e=>['High','Medium'].includes(e.importance)).map(e=>{
+          const imp = (e.importance||'low').toLowerCase();
+          const isKey = isKeyEvent(e.event);
+          const t = e.date?new Date(e.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'TBD';
+          const cur = (e.country||'').toLowerCase();
+          return `
+            <div class="news-event-row">
+              <div class="news-impact-dot ${imp}"></div>
+              <div class="news-event-time">${t}</div>
+              <div class="news-event-currency ${cur}">${e.country||'—'}</div>
+              <div class="news-event-name">${e.event||'Economic Event'}</div>
+              <div class="news-event-impact ${imp}">${e.importance||''}</div>
+              ${isKey&&imp==='high'?'<div class="news-avoid-tag">⛔ AVOID</div>':''}
+            </div>`;
+        }).join('')}
+      </div>`;
+  }).join('');
+}
+
+async function fetchNewsCalendar(){
+  // Now handled by fetchWeeklyNews()
+  await fetchWeeklyNews();
 }
 
 function renderNewsBanner(){
@@ -563,14 +1453,15 @@ function renderNewsBanner(){
 }
 
 // ═══════════════════════════════════════════════
-// TWELVE DATA FETCH — 4H CANDLES (Upgrade #1)
+// TWELVE DATA FETCH — DYNAMIC TIMEFRAME
 // ═══════════════════════════════════════════════
 async function fetchFourHourHistory(pair){
+  const tf  = TIMEFRAMES[currentTF];
   const sym = encodeURIComponent(pair);
-  const url = `https://api.twelvedata.com/time_series?symbol=${sym}&interval=4h&outputsize=60&apikey=${API_KEY}&format=JSON`;
+  const url = `https://api.twelvedata.com/time_series?symbol=${sym}&interval=${tf.interval}&outputsize=${tf.outputsize}&apikey=${API_KEY}&format=JSON`;
   const r = await fetch(url);
   const d = await r.json();
-  if(d.status==='error'||!d.values) throw new Error(d.message||'4H fetch error');
+  if(d.status==='error'||!d.values) throw new Error(d.message||`${tf.label} fetch error`);
   return d.values.reverse().map(v=>parseFloat(v.close));
 }
 
@@ -615,7 +1506,7 @@ async function fetchAllPrices(forceHistory=false){
   for(const pair of PAIRS){
     try{
       const s = state[pair];
-      const needsHistory = forceHistory || !lastHistoryFetch[pair] || (now-lastHistoryFetch[pair])>REFRESH_HISTORY;
+      const needsHistory = forceHistory || !lastHistoryFetch[pair] || (now-lastHistoryFetch[pair])>TIMEFRAMES[currentTF].refreshHistory;
       const needsDaily   = forceHistory || !lastDailyFetch[pair]   || (now-lastDailyFetch[pair])>REFRESH_DAILY;
 
       if(needsDaily){
@@ -652,7 +1543,7 @@ async function fetchAllPrices(forceHistory=false){
   }
 
   lastFetch = new Date();
-  if(ok===PAIRS.length) setStatus('ok',`${ok}/${PAIRS.length} pairs live · 4H candles · Twelve Data`);
+  if(ok===PAIRS.length) setStatus('ok',`${ok}/${PAIRS.length} pairs live · ${TIMEFRAMES[currentTF].label} candles · Twelve Data`);
   else if(ok>0)         setStatus('ok',`${ok}/${PAIRS.length} pairs live · some data stale`);
   else                  setStatus('error','Could not fetch — check internet or API limit (resets 7PM CDT)');
 
@@ -839,7 +1730,7 @@ function computeSignal(pair){
 
   // Trade plan — ATR-based with minimums
   const pipU=0.0001;
-  const minSl=(MIN_SL_PIPS[pair]||20)*pipU;
+  const minSl=((TIMEFRAMES[currentTF].minSLpips[pair])||20)*pipU;
   const slDist=Math.max(atr*1.5,minSl);
   const slPips=Math.round(slDist/pipU);
   const tp1Pips=Math.round(slPips*1.5);
@@ -947,7 +1838,7 @@ function renderPairs(){
     const bbC  =bbP<20?'var(--green)':bbP>80?'var(--red)':'var(--text3)';
     const momC =ind.mom>60?'var(--green)':ind.mom<40?'var(--red)':'var(--text3)';
     const sigIcon=s.signal==='buy'?'▲':s.signal==='sell'?'▼':'◆';
-    const srcTag=s.dataSource==='live'?'<span style="color:var(--green);font-weight:700">● LIVE · 4H</span>':s.dataSource==='stale'?'<span style="color:var(--amber)">⚠ STALE</span>':'<span style="color:var(--muted)">LOADING</span>';
+    const srcTag=s.dataSource==='live'?`<span style="color:var(--green);font-weight:700">● LIVE · ${TIMEFRAMES[currentTF].label}</span>`:s.dataSource==='stale'?'<span style="color:var(--amber)">⚠ STALE</span>':'<span style="color:var(--muted)">LOADING</span>';
     const cardId='card-'+p.replace('/','');
     const chartId='chart-'+p.replace('/','');
 
@@ -1218,6 +2109,34 @@ function setStatus(status,msg){
 // ═══════════════════════════════════════════════
 // UI
 // ═══════════════════════════════════════════════
+function setTimeframe(tf, btn){
+  if(tf===currentTF) return; // already selected
+  currentTF = tf;
+
+  // Update button styles
+  document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Update subtitle
+  const sub = document.getElementById('signals-sub');
+  if(sub) sub.textContent = `7-INDICATOR CONFLUENCE · ${TIMEFRAMES[tf].label} CANDLES · REAL PRICES`;
+
+  // Reset history so it re-fetches with new timeframe
+  lastHistoryFetch = {};
+  PAIRS.forEach(p=>{
+    state[p].history=[];
+    state[p].confHistory=[];
+    state[p].price=null;
+    state[p].dataSource='loading';
+  });
+
+  // Clear cards and refetch
+  document.getElementById('pairs-list').innerHTML='';
+  clearTimeout(fetchTimer);
+  showToast(`Switching to ${TIMEFRAMES[tf].label} candles...`);
+  fetchAllPrices(true);
+}
+
 function showPage(name,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
@@ -1226,6 +2145,8 @@ function showPage(name,btn){
   if(name==='journal') renderTrades();
   if(name==='calc') calcPosition();
   if(name==='alerts') renderAlertList();
+  if(name==='news') renderWeeklyCalendar();
+  // backtest page renders on demand via Run button
 }
 function logout(){
   try{ localStorage.removeItem('fx_api_key'); }catch(e){}
@@ -1312,6 +2233,9 @@ function initApp(){
   renderTrades();
   calcPosition();
   fetchAllPrices(true);
+  fetchWeeklyNews(); // load news calendar on boot
+  // Refresh news calendar every 30 minutes
+  setInterval(fetchWeeklyNews, 1800000);
 }
 
 // ═══════════════════════════════════════════════
