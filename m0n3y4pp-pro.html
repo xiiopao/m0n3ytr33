@@ -616,7 +616,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="sec-hdr">
         <div>
           <div class="sec-title">Live Signals</div>
-          <div class="sec-sub" id="signals-sub">3-INDICATOR CONFLUENCE · 4H CANDLES · REAL PRICES</div>
+          <div class="sec-sub" id="signals-sub">EMA21/50 + RSI + ATR · SWING SIGNALS · REAL PRICES</div>
         </div>
       </div>
 
@@ -630,7 +630,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </button>
       </div>
       <div class="strategy-info trend" id="strategy-info">
-        <strong>Institutional Trend Following</strong> — EMA200 (institutional trend) + MACD flip (precise timing) + RSI zone (momentum confirmation). All 3 must agree. Fewer but much higher quality signals.
+        <strong>Classic Swing (Option A)</strong> — EMA21/EMA50 crossover (trend direction) + RSI 14 (momentum filter) + ATR 14 (volatility filter). Fires on fresh cross or trend continuation. Self-fulfilling signals — thousands of traders watch these levels.
       </div>
       <!-- Weekly Danger Meter -->
       <div class="danger-meter" id="danger-meter">
@@ -943,9 +943,8 @@ async function runBacktest(){
     const candles = await fetchBacktestData(pair, tf);
     setProgress(20, `Loaded ${candles.length} candles · Running signals...`);
 
-    // Need at least 200 bars for EMA200 to warm up properly
-    // Using 200 ensures the institutional EMA200 is reliable from the start
-    const warmup = 200;
+    // Need at least 60 bars for EMA50 warmup (Option A uses EMA21/50)
+    const warmup = 60;
     if(candles.length < warmup+10){
       throw new Error(`Not enough data — need ${warmup+10} bars minimum, got ${candles.length}`);
     }
@@ -1081,22 +1080,22 @@ async function runBacktest(){
         confirmedEntry=rawSig!=='neutral'; // fire whenever at extreme
         trendAligned=true;
       } else {
-        // ── INSTITUTIONAL 3-INDICATOR: EMA200 + MACD + RSI ──
-        const ema200bt=calcEMA(h,Math.min(200,h.length));
-        const macdbt=calcMACD(h);
-        const rsibt=calcRSI(h,14);
-        const aboveEMA=price>ema200bt;
-        const macdBull=macdbt.hist>0&&macdbt.macd>macdbt.signal;
-        const macdBear=macdbt.hist<0&&macdbt.macd<macdbt.signal;
-        const rsiBuy=rsibt>=40&&rsibt<=65;
-        const rsiSell=rsibt>=35&&rsibt<=60;
-        if(aboveEMA&&macdBull&&rsiBuy){rawSig='buy';conf=100;}
-        else if(!aboveEMA&&macdBear&&rsiSell){rawSig='sell';conf=100;}
+        // ── OPTION A: EMA21/50 CROSS + RSI + ATR ──────────
+        const emaCrossbt = calcEMACross(h);
+        const rsibt      = calcRSI(h,14);
+        const hasVolbt   = calcVolatilityFilter(h,14);
+        const rsiBull    = rsibt>50&&rsibt<70;
+        const rsiSellbt  = rsibt<50&&rsibt>30;
+        const trendUpbt  = emaCrossbt.above;
+        const freshBull  = emaCrossbt.cross==='bull';
+        const freshBear  = emaCrossbt.cross==='bear';
+        // Fire on fresh cross or trend continuation with RSI+ATR confirm
+        if((freshBull||trendUpbt)&&rsiBull&&hasVolbt){rawSig='buy';conf=100;}
+        else if((freshBear||!trendUpbt)&&rsiSellbt&&hasVolbt){rawSig='sell';conf=100;}
         else conf=0;
         trendAligned=true;
-        // Enter on signal bar directly — no confirmation candle in backtest
-        // (confirmation candle was delaying entries causing worse fills)
-        confirmedEntry = rawSig!=='neutral' && rawSig!==prevSig;
+        const isFreshbt=freshBull||freshBear;
+        confirmedEntry=rawSig!=='neutral'&&(isFreshbt||rawSig!==prevSig);
       }
       let sig=rawSig;
 
@@ -1703,9 +1702,17 @@ function calcEMA(h,p){
   return e;
 }
 function calcMACD(h){
-  if(h.length<26) return {macd:0,signal:0,hist:0};
-  const m=calcEMA(h,12)-calcEMA(h,26);
-  return {macd:m,signal:m*0.85,hist:m*0.15};
+  if(h.length<35) return {macd:0,signal:0,hist:0};
+  // Compute EMA12 and EMA26 for each bar to get macd line series
+  const macdLine=[];
+  for(let i=26;i<=h.length;i++){
+    const slice=h.slice(0,i);
+    macdLine.push(calcEMA(slice,12)-calcEMA(slice,26));
+  }
+  // Signal = EMA9 of macd line
+  const sig=calcEMA(macdLine,Math.min(9,macdLine.length));
+  const macdVal=macdLine[macdLine.length-1];
+  return {macd:macdVal, signal:sig, hist:macdVal-sig};
 }
 function calcBB(h,p=20,mult=2){
   if(h.length<p) return {upper:h[h.length-1],lower:h[h.length-1],mid:h[h.length-1]};
@@ -1723,6 +1730,37 @@ function calcATR(h,period=14){
   let sum=0;
   for(let i=h.length-period;i<h.length;i++) sum+=Math.abs(h[i]-h[i-1]);
   return sum/period;
+}
+
+// OPTION A — EMA21/EMA50 crossover detection
+function calcEMACross(h){
+  if(h.length<52) return {cross:'none', ema21:h[h.length-1], ema50:h[h.length-1]};
+  const ema21     = calcEMA(h, 21);
+  const ema50     = calcEMA(h, 50);
+  // Previous bar values
+  const hPrev     = h.slice(0,-1);
+  const ema21prev = calcEMA(hPrev, 21);
+  const ema50prev = calcEMA(hPrev, 50);
+  // Detect crossover
+  const bullCross = ema21prev <= ema50prev && ema21 > ema50; // crossed above
+  const bearCross = ema21prev >= ema50prev && ema21 < ema50; // crossed below
+  return {
+    cross: bullCross?'bull':bearCross?'bear':'none',
+    ema21, ema50,
+    ema21prev, ema50prev,
+    above: ema21 > ema50, // current position
+  };
+}
+
+// ATR-based volatility filter — only enter when market is moving enough
+function calcVolatilityFilter(h, period=14){
+  const atr    = calcATR(h, period);
+  const avgATR = h.length>period*2
+    ? h.slice(-period*2,-period).reduce((a,_,i,arr)=>
+        i===0?0:a+Math.abs(arr[i]-arr[i-1]),0)/period
+    : atr;
+  // ATR should be at least 80% of its recent average — market is moving
+  return atr >= avgATR * 0.8;
 }
 
 // UPGRADE 6 — Momentum Score (OBV-style price momentum for forex)
@@ -1998,91 +2036,81 @@ function computeSignal(pair){
     return;
   }
 
-  // ── INSTITUTIONAL 3-INDICATOR ENGINE ───────────────
-  // EMA200 (trend) + MACD (timing) + RSI (confirmation)
-  // Each measures something completely different — zero redundancy
+  // ── OPTION A: EMA21/50 CROSSOVER + RSI + ATR ────────
+  // EMA21 x EMA50 (trend + timing) + RSI (filter) + ATR (volatility)
 
   const rsi    = calcRSI(h, 14);
-  const ema200 = calcEMA(h, Math.min(200, h.length));
-  const ema50  = calcEMA(h, Math.min(50,  h.length));  // kept for S&R calc
-  const macd   = calcMACD(h);
+  const emaCross = calcEMACross(h);
   const atr    = calcATR(h, 14);
-  const bb     = calcBB(h, 20); // kept for S&R display only
+  const bb     = calcBB(h, 20);   // for S&R display
+  const ema50  = emaCross.ema50;
+  const hasVol = calcVolatilityFilter(h, 14);
 
-  s.indicators = {rsi, ema200, ema50, macd, atr, bb};
+  s.indicators = {rsi, ema21:emaCross.ema21, ema50, emaCross, macd:calcMACD(h), atr, bb};
   s.dailyTrend = calcDailyTrend(s.dailyHistory);
   s.sr         = calcSupportResistance(h, price, pair);
 
-  // ── RULE 1: EMA200 — Major Trend Direction ───────────
-  // The most watched level by institutional traders globally
-  // Price above EMA200 = only look for BUY opportunities
-  // Price below EMA200 = only look for SELL opportunities
-  const aboveEMA200 = price > ema200;
-  const belowEMA200 = price < ema200;
-  const distFromEMA200 = Math.abs(price - ema200);
-  const pctFromEMA200  = distFromEMA200 / ema200 * 100;
+  // ── RULE 1: EMA21/50 — Trend direction & crossover ───
+  // Fresh crossover = strongest entry, above/below = trend continuation
+  const freshBullCross = emaCross.cross==='bull';
+  const freshBearCross = emaCross.cross==='bear';
+  const trendUp   = emaCross.above;   // EMA21 > EMA50 = uptrend
+  const trendDown = !emaCross.above;  // EMA21 < EMA50 = downtrend
 
-  // ── RULE 2: MACD Histogram Flip ──────────────────────
-  // Only care about the histogram flipping from negative to positive (or vice versa)
-  // This is the most precise entry timing signal
-  const macdBullFlip = macd.hist > 0 && macd.macd > macd.signal;
-  const macdBearFlip = macd.hist < 0 && macd.macd < macd.signal;
+  // ── RULE 2: RSI Filter ────────────────────────────────
+  // Avoid entering overbought BUYs or oversold SELLs
+  // BUY: RSI must be > 50 (bullish momentum) and < 70 (not overbought)
+  // SELL: RSI must be < 50 (bearish momentum) and > 30 (not oversold)
+  const rsiBullOK = rsi > 50 && rsi < 70;
+  const rsiSellOK = rsi < 50 && rsi > 30;
 
-  // ── RULE 3: RSI Confirmation ─────────────────────────
-  // RSI confirms momentum is NOT exhausted at entry
-  // For BUY: RSI must be between 40-65 (momentum building, not overbought)
-  // For SELL: RSI must be between 35-60 (momentum building, not oversold)
-  const rsiBuyZone  = rsi >= 40 && rsi <= 65;
-  const rsiSellZone = rsi >= 35 && rsi <= 60;
+  // ── RULE 3: ATR Volatility Filter ────────────────────
+  // Only trade when market has enough movement to justify entry
+  // Prevents trading in dead/ranging markets with no momentum
+  const volOK = hasVol;
 
   // ── SIGNAL LOGIC ─────────────────────────────────────
-  // BUY:  Price above EMA200 + MACD bullish flip + RSI in buy zone
-  // SELL: Price below EMA200 + MACD bearish flip + RSI in sell zone
-  // All 3 must agree — no partial signals
+  // Primary: Fresh EMA crossover + RSI confirms + ATR confirms
+  // Secondary: Trend continuation (no fresh cross but trend intact + RSI pullback)
 
   let rawSignal = 'neutral';
   const r = [];
 
-  if(aboveEMA200 && macdBullFlip && rsiBuyZone){
+  if((freshBullCross || trendUp) && rsiBullOK && volOK){
     rawSignal = 'buy';
-    r.push({t:`Above EMA200 (+${pctFromEMA200.toFixed(2)}%)`,b:true});
-    r.push({t:'MACD histogram bullish flip',b:true});
-    r.push({t:`RSI ${rsi} — momentum building`,b:true});
-  } else if(belowEMA200 && macdBearFlip && rsiSellZone){
+    r.push({t: freshBullCross?'EMA21 crossed above EMA50':'EMA21 above EMA50', b:true});
+    r.push({t:`RSI ${rsi} — bullish momentum`, b:true});
+    r.push({t:'ATR volatility sufficient', b:true});
+  } else if((freshBearCross || trendDown) && rsiSellOK && volOK){
     rawSignal = 'sell';
-    r.push({t:`Below EMA200 (-${pctFromEMA200.toFixed(2)}%)`,b:false});
-    r.push({t:'MACD histogram bearish flip',b:false});
-    r.push({t:`RSI ${rsi} — momentum building`,b:false});
+    r.push({t: freshBearCross?'EMA21 crossed below EMA50':'EMA21 below EMA50', b:false});
+    r.push({t:`RSI ${rsi} — bearish momentum`, b:false});
+    r.push({t:'ATR volatility sufficient', b:false});
   }
 
-  // ── PARTIAL SIGNALS (show progress toward full signal) ──
+  // Partial score for progress display
   let bull=0, bear=0;
-  if(aboveEMA200) bull++; else bear++;
-  if(macdBullFlip) bull++; else if(macdBearFlip) bear++;
-  if(rsiBuyZone&&aboveEMA200) bull++; else if(rsiSellZone&&belowEMA200) bear++;
+  if(trendUp) bull++; else bear++;
+  if(rsiBullOK) bull++; else if(rsiSellOK) bear++;
+  if(volOK&&trendUp) bull++; else if(volOK&&trendDown) bear++;
 
   s.bullScore = bull;
   s.bearScore = bear;
   const total = 3;
 
-  // ── CONFIRMATION CANDLE ───────────────────────────────
-  // Wait for next candle to close in signal direction before entry
-  const prevClose = h[h.length-2] || price;
-  const bullConfirm = s.prevRawSignal==='buy'  && price > prevClose;
-  const bearConfirm = s.prevRawSignal==='sell' && price < prevClose;
-
-  if(rawSignal !== 'neutral') s.prevRawSignal = rawSignal;
-
-  let confirmedSignal = 'neutral';
-  if(bullConfirm && s.prevRawSignal==='buy')  confirmedSignal = 'buy';
-  if(bearConfirm && s.prevRawSignal==='sell') confirmedSignal = 'sell';
-  if(confirmedSignal !== 'neutral') s.prevRawSignal = null;
+  // ── SIGNAL STATE ─────────────────────────────────────
+  // For crossover strategy: fresh cross fires immediately
+  // Continuation: requires signal change from previous
+  const isFreshSignal = freshBullCross || freshBearCross;
+  const isNewSignal   = rawSignal !== 'neutral' &&
+                        (isFreshSignal || rawSignal !== s.prevSignal);
 
   s.prevSignal    = s.signal;
-  s.signal        = confirmedSignal;
-  s.confidence    = rawSignal==='buy'||rawSignal==='sell' ? 100 :
+  s.signal        = isNewSignal ? rawSignal : 'neutral';
+  s.confidence    = rawSignal !== 'neutral' ? 100 :
                     Math.round(Math.max(bull,bear)/total*100);
-  s.pendingSignal = rawSignal!=='neutral' && confirmedSignal==='neutral' ? rawSignal : null;
+  s.pendingSignal = null; // no pending in crossover system — fires on cross
+  s.prevRawSignal = rawSignal;
   s.reasons       = r;
 
   // Upgrade #3 — trend alignment check
@@ -2314,45 +2342,41 @@ function renderPairs(){
 
         ${price===null?`<div style="font-family:var(--mono);font-size:14px;color:var(--amber);padding:12px 0">⏳ Fetching live data...</div>`:`
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
-          <!-- EMA200 -->
-          <div class="ind-box" style="border-color:${price>(ind.ema200||price)?'rgba(52,211,153,0.3)':'rgba(251,113,133,0.3)'}">
-            <div class="ind-name">① EMA 200</div>
-            <div class="ind-val" style="color:${price>(ind.ema200||price)?'var(--green)':'var(--red)'}">
-              ${price>(ind.ema200||price)?'ABOVE ▲':'BELOW ▼'}
+          <!-- EMA CROSS -->
+          <div class="ind-box" style="border-color:${ind.emaCross?.above?'rgba(52,211,153,0.3)':'rgba(251,113,133,0.3)'}">
+            <div class="ind-name">① EMA 21/50</div>
+            <div class="ind-val" style="color:${ind.emaCross?.cross==='bull'?'var(--green)':ind.emaCross?.cross==='bear'?'var(--red)':ind.emaCross?.above?'var(--green)':'var(--red)'}">
+              ${ind.emaCross?.cross==='bull'?'🔥 BULL CROSS':ind.emaCross?.cross==='bear'?'🔥 BEAR CROSS':ind.emaCross?.above?'ABOVE':'BELOW'}
             </div>
-            <div class="ind-state">${fmt(p,ind.ema200||0)}</div>
-            <div class="ind-state" style="margin-top:3px;color:${price>(ind.ema200||price)?'var(--green)':'var(--red)'}">
-              ${price>(ind.ema200||price)?'→ BUY SIDE':'→ SELL SIDE'}
-            </div>
-          </div>
-          <!-- MACD -->
-          <div class="ind-box" style="border-color:${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)?'rgba(52,211,153,0.3)':(ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'rgba(251,113,133,0.3)':'var(--border)'}">
-            <div class="ind-name">② MACD FLIP</div>
-            <div class="ind-val" style="color:${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)?'var(--green)':(ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'var(--red)':'var(--muted)'}">
-              ${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)?'BULL FLIP':
-                (ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'BEAR FLIP':'NEUTRAL'}
-            </div>
-            <div class="ind-state">Hist: ${fmt(p,Math.abs(ind.macd?.hist||0))}</div>
-            <div class="ind-state" style="margin-top:3px">
-              ${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)?'→ BUY timing':
-                (ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'→ SELL timing':'→ Wait'}
+            <div class="ind-state">EMA21: ${fmt(p,ind.ema21||0)}</div>
+            <div class="ind-state">EMA50: ${fmt(p,ind.ema50||0)}</div>
+            <div class="ind-state" style="margin-top:3px;color:${ind.emaCross?.above?'var(--green)':'var(--red)'}">
+              ${ind.emaCross?.above?'→ BUY TREND':'→ SELL TREND'}
             </div>
           </div>
           <!-- RSI -->
-          <div class="ind-box" style="border-color:${(ind.rsi||50)>=40&&(ind.rsi||50)<=65?'rgba(52,211,153,0.3)':(ind.rsi||50)>=35&&(ind.rsi||50)<=60?'rgba(56,189,248,0.3)':'var(--border)'}">
-            <div class="ind-name">③ RSI 14</div>
-            <div class="ind-val" style="color:${(ind.rsi||50)<35?'var(--red)':(ind.rsi||50)>65?'var(--red)':'var(--green)'}">
+          <div class="ind-box" style="border-color:${(ind.rsi||50)>50&&(ind.rsi||50)<70?'rgba(52,211,153,0.3)':(ind.rsi||50)<50&&(ind.rsi||50)>30?'rgba(251,113,133,0.3)':'var(--border)'}">
+            <div class="ind-name">② RSI 14</div>
+            <div class="ind-val" style="color:${(ind.rsi||50)>70?'var(--red)':(ind.rsi||50)<30?'var(--red)':(ind.rsi||50)>50?'var(--green)':'var(--red)'}">
               ${ind.rsi??'—'}
             </div>
-            <div class="ind-state">${(ind.rsi||50)<35?'OVERSOLD':(ind.rsi||50)>65?'OVERBOUGHT':(ind.rsi||50)>=40&&(ind.rsi||50)<=65?'BUY ZONE':(ind.rsi||50)>=35&&(ind.rsi||50)<=60?'SELL ZONE':'NEUTRAL'}</div>
-            <div class="ind-state" style="margin-top:3px;color:${(ind.rsi||50)>=40&&(ind.rsi||50)<=65||((ind.rsi||50)>=35&&(ind.rsi||50)<=60)?'var(--green)':'var(--muted)'}">
-              ${(ind.rsi||50)>=40&&(ind.rsi||50)<=65?'→ OK for BUY':(ind.rsi||50)>=35&&(ind.rsi||50)<=60?'→ OK for SELL':'→ Excluded'}
+            <div class="ind-state">${(ind.rsi||50)>70?'OVERBOUGHT':(ind.rsi||50)<30?'OVERSOLD':(ind.rsi||50)>50&&(ind.rsi||50)<70?'BULL ZONE':(ind.rsi||50)<50&&(ind.rsi||50)>30?'BEAR ZONE':'NEUTRAL'}</div>
+            <div class="ind-state" style="margin-top:3px;color:${((ind.rsi||50)>50&&(ind.rsi||50)<70)||((ind.rsi||50)<50&&(ind.rsi||50)>30)?'var(--green)':'var(--red)'}">
+              ${(ind.rsi||50)>50&&(ind.rsi||50)<70?'→ OK for BUY':(ind.rsi||50)<50&&(ind.rsi||50)>30?'→ OK for SELL':'→ Filtered out'}
             </div>
+          </div>
+          <!-- ATR -->
+          <div class="ind-box">
+            <div class="ind-name">③ ATR 14</div>
+            <div class="ind-val" style="color:var(--acc)">${ind.atr?fmt(p,ind.atr):'—'}</div>
+            <div class="ind-state">volatility</div>
+            <div class="ind-state" style="margin-top:3px;color:var(--green)">→ SL sizing</div>
           </div>
         </div>
         <!-- Signal requirement explainer -->
         <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:14px;line-height:1.8">
-          SIGNAL REQUIRES ALL 3: ①${price>(ind.ema200||price)?'✅':'❌'} EMA200 · ②${(ind.macd?.hist||0)>0&&(ind.macd?.macd||0)>(ind.macd?.signal||0)||(ind.macd?.hist||0)<0&&(ind.macd?.macd||0)<(ind.macd?.signal||0)?'✅':'❌'} MACD FLIP · ③${(ind.rsi||50)>=35&&(ind.rsi||50)<=65?'✅':'❌'} RSI IN ZONE
+          SIGNAL: ①${ind.emaCross?.above?'✅':'❌'} EMA21>EMA50 · ②${((ind.rsi||50)>50&&(ind.rsi||50)<70)||((ind.rsi||50)<50&&(ind.rsi||50)>30)?'✅':'❌'} RSI IN ZONE · ③✅ ATR FILTER
+          ${ind.emaCross?.cross!=='none'?` · <span style="color:var(--green)">🔥 FRESH CROSS DETECTED</span>`:''}
         </div>
 
         ${s.reasons.length?`<div class="reasons">${s.reasons.map(r=>`<div class="rtag ${r.b?'bullish':'bearish'}">${r.t}</div>`).join('')}</div>`:''}
@@ -2552,7 +2576,7 @@ function setStrategy(mode, btn){
   const info = document.getElementById('strategy-info');
   if(mode==='trend'){
     info.className='strategy-info trend';
-    info.innerHTML='<strong>Institutional Trend Following</strong> — EMA200 (institutional trend) + MACD flip (precise timing) + RSI zone (momentum confirmation). All 3 must agree. Fewer but much higher quality signals.';
+    info.innerHTML='<strong>Classic Swing (Option A)</strong> — EMA21/EMA50 crossover (trend direction) + RSI 14 (momentum filter) + ATR 14 (volatility filter). Fires on fresh cross or trend continuation. Self-fulfilling signals — thousands of traders watch these levels.';
   } else {
     info.className='strategy-info reversion';
     info.innerHTML='<strong>Mean Reversion</strong> — Buys when price is at the lower Bollinger Band extreme, sells at the upper extreme. Targets a return to the mean (middle band). Works best in ranging markets. Higher win rate, smaller individual wins.';
@@ -2581,7 +2605,7 @@ function setTimeframe(tf, btn){
 
   // Update subtitle
   const sub = document.getElementById('signals-sub');
-  if(sub) sub.textContent = `3-INDICATOR CONFLUENCE · ${TIMEFRAMES[tf].label} CANDLES · REAL PRICES`;
+  if(sub) sub.textContent = `EMA21/50 + RSI + ATR · ${TIMEFRAMES[tf].label} CANDLES · REAL PRICES`;
 
   // Reset history so it re-fetches with new timeframe
   lastHistoryFetch = {};
