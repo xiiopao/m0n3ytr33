@@ -1084,8 +1084,8 @@ async function runBacktest(){
         const emaCrossbt = calcEMACross(h);
         const rsibt      = calcRSI(h,14);
         const hasVolbt   = calcVolatilityFilter(h,14);
-        const rsiBull    = rsibt>50&&rsibt<70;
-        const rsiSellbt  = rsibt<50&&rsibt>30;
+        const rsiBull    = rsibt>50&&rsibt<80;
+        const rsiSellbt  = rsibt<50&&rsibt>20;
         const trendUpbt  = emaCrossbt.above;
         const freshBull  = emaCrossbt.cross==='bull';
         const freshBear  = emaCrossbt.cross==='bear';
@@ -1701,17 +1701,34 @@ function calcEMA(h,p){
   for(let i=p;i<h.length;i++) e=h[i]*k+e*(1-k);
   return e;
 }
+// Helper: compute EMA series (one EMA value per bar after warmup)
+function calcEMASeries(h, period){
+  if(h.length<period) return [];
+  const k=2/(period+1);
+  const out=[];
+  // Seed with SMA of first `period` values
+  let ema=h.slice(0,period).reduce((a,b)=>a+b,0)/period;
+  out.push(ema);
+  for(let i=period;i<h.length;i++){
+    ema = h[i]*k + ema*(1-k);
+    out.push(ema);
+  }
+  return out;
+}
+
 function calcMACD(h){
   if(h.length<35) return {macd:0,signal:0,hist:0};
-  // Compute EMA12 and EMA26 for each bar to get macd line series
-  const macdLine=[];
-  for(let i=26;i<=h.length;i++){
-    const slice=h.slice(0,i);
-    macdLine.push(calcEMA(slice,12)-calcEMA(slice,26));
-  }
-  // Signal = EMA9 of macd line
-  const sig=calcEMA(macdLine,Math.min(9,macdLine.length));
-  const macdVal=macdLine[macdLine.length-1];
+  // Build EMA12 and EMA26 SERIES (one value per bar after warmup)
+  const ema12series = calcEMASeries(h,12);
+  const ema26series = calcEMASeries(h,26);
+  // Align them — EMA26 starts 14 bars later than EMA12
+  const offset = ema12series.length - ema26series.length;
+  const macdLine = ema26series.map((e26, i) => ema12series[i+offset] - e26);
+  // Signal = EMA9 of MACD line series
+  if(macdLine.length<9) return {macd:macdLine[macdLine.length-1]||0, signal:0, hist:0};
+  const signalSeries = calcEMASeries(macdLine, 9);
+  const macdVal = macdLine[macdLine.length-1];
+  const sig     = signalSeries[signalSeries.length-1];
   return {macd:macdVal, signal:sig, hist:macdVal-sig};
 }
 function calcBB(h,p=20,mult=2){
@@ -1753,14 +1770,13 @@ function calcEMACross(h){
 }
 
 // ATR-based volatility filter — only enter when market is moving enough
+// Compares current ATR against ATR from period*2 bars ago
 function calcVolatilityFilter(h, period=14){
-  const atr    = calcATR(h, period);
-  const avgATR = h.length>period*2
-    ? h.slice(-period*2,-period).reduce((a,_,i,arr)=>
-        i===0?0:a+Math.abs(arr[i]-arr[i-1]),0)/period
-    : atr;
-  // ATR should be at least 80% of its recent average — market is moving
-  return atr >= avgATR * 0.8;
+  if(h.length < period*3) return true; // not enough data — let it pass
+  const atrNow  = calcATR(h, period);
+  const atrPast = calcATR(h.slice(0, h.length-period), period);
+  // Current ATR should be at least 70% of recent past ATR
+  return atrNow >= atrPast * 0.7;
 }
 
 // UPGRADE 6 — Momentum Score (OBV-style price momentum for forex)
@@ -2058,11 +2074,11 @@ function computeSignal(pair){
   const trendDown = !emaCross.above;  // EMA21 < EMA50 = downtrend
 
   // ── RULE 2: RSI Filter ────────────────────────────────
-  // Avoid entering overbought BUYs or oversold SELLs
-  // BUY: RSI must be > 50 (bullish momentum) and < 70 (not overbought)
-  // SELL: RSI must be < 50 (bearish momentum) and > 30 (not oversold)
-  const rsiBullOK = rsi > 50 && rsi < 70;
-  const rsiSellOK = rsi < 50 && rsi > 30;
+  // BUY: RSI must be > 50 (bullish momentum) and < 80 (not extreme overbought)
+  // SELL: RSI must be < 50 (bearish momentum) and > 20 (not extreme oversold)
+  // Wider band lets us ride trends instead of exiting prematurely
+  const rsiBullOK = rsi > 50 && rsi < 80;
+  const rsiSellOK = rsi < 50 && rsi > 20;
 
   // ── RULE 3: ATR Volatility Filter ────────────────────
   // Only trade when market has enough movement to justify entry
@@ -2355,14 +2371,14 @@ function renderPairs(){
             </div>
           </div>
           <!-- RSI -->
-          <div class="ind-box" style="border-color:${(ind.rsi||50)>50&&(ind.rsi||50)<70?'rgba(52,211,153,0.3)':(ind.rsi||50)<50&&(ind.rsi||50)>30?'rgba(251,113,133,0.3)':'var(--border)'}">
+          <div class="ind-box" style="border-color:${(ind.rsi||50)>50&&(ind.rsi||50)<80?'rgba(52,211,153,0.3)':(ind.rsi||50)<50&&(ind.rsi||50)>20?'rgba(251,113,133,0.3)':'var(--border)'}">
             <div class="ind-name">② RSI 14</div>
-            <div class="ind-val" style="color:${(ind.rsi||50)>70?'var(--red)':(ind.rsi||50)<30?'var(--red)':(ind.rsi||50)>50?'var(--green)':'var(--red)'}">
+            <div class="ind-val" style="color:${(ind.rsi||50)>=80?'var(--red)':(ind.rsi||50)<=20?'var(--red)':(ind.rsi||50)>50?'var(--green)':'var(--red)'}">
               ${ind.rsi??'—'}
             </div>
-            <div class="ind-state">${(ind.rsi||50)>70?'OVERBOUGHT':(ind.rsi||50)<30?'OVERSOLD':(ind.rsi||50)>50&&(ind.rsi||50)<70?'BULL ZONE':(ind.rsi||50)<50&&(ind.rsi||50)>30?'BEAR ZONE':'NEUTRAL'}</div>
-            <div class="ind-state" style="margin-top:3px;color:${((ind.rsi||50)>50&&(ind.rsi||50)<70)||((ind.rsi||50)<50&&(ind.rsi||50)>30)?'var(--green)':'var(--red)'}">
-              ${(ind.rsi||50)>50&&(ind.rsi||50)<70?'→ OK for BUY':(ind.rsi||50)<50&&(ind.rsi||50)>30?'→ OK for SELL':'→ Filtered out'}
+            <div class="ind-state">${(ind.rsi||50)>=80?'EXTREME OB':(ind.rsi||50)<=20?'EXTREME OS':(ind.rsi||50)>50&&(ind.rsi||50)<80?'BULL ZONE':(ind.rsi||50)<50&&(ind.rsi||50)>20?'BEAR ZONE':'NEUTRAL'}</div>
+            <div class="ind-state" style="margin-top:3px;color:${((ind.rsi||50)>50&&(ind.rsi||50)<80)||((ind.rsi||50)<50&&(ind.rsi||50)>20)?'var(--green)':'var(--red)'}">
+              ${(ind.rsi||50)>50&&(ind.rsi||50)<80?'→ OK for BUY':(ind.rsi||50)<50&&(ind.rsi||50)>20?'→ OK for SELL':'→ Filtered out'}
             </div>
           </div>
           <!-- ATR -->
@@ -2375,7 +2391,7 @@ function renderPairs(){
         </div>
         <!-- Signal requirement explainer -->
         <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:14px;line-height:1.8">
-          SIGNAL: ①${ind.emaCross?.above?'✅':'❌'} EMA21>EMA50 · ②${((ind.rsi||50)>50&&(ind.rsi||50)<70)||((ind.rsi||50)<50&&(ind.rsi||50)>30)?'✅':'❌'} RSI IN ZONE · ③✅ ATR FILTER
+          SIGNAL: ①${ind.emaCross?.above?'✅':'❌'} EMA21>EMA50 · ②${((ind.rsi||50)>50&&(ind.rsi||50)<80)||((ind.rsi||50)<50&&(ind.rsi||50)>20)?'✅':'❌'} RSI IN ZONE · ③✅ ATR FILTER
           ${ind.emaCross?.cross!=='none'?` · <span style="color:var(--green)">🔥 FRESH CROSS DETECTED</span>`:''}
         </div>
 
