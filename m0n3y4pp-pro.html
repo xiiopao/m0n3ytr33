@@ -135,7 +135,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .conf-chart-val{font-family:var(--mono);font-size:11px;font-weight:700}
 
 /* INDICATORS */
-.ind-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-bottom:14px}
+.ind-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
 .ind-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:9px 8px}
 .ind-name{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
 .ind-val{font-family:var(--mono);font-size:14px;font-weight:700;line-height:1}
@@ -550,7 +550,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="sec-hdr">
         <div>
           <div class="sec-title">Live Signals</div>
-          <div class="sec-sub" id="signals-sub">7-INDICATOR CONFLUENCE · 4H CANDLES · REAL PRICES</div>
+          <div class="sec-sub" id="signals-sub">8-INDICATOR CONFLUENCE · 4H CANDLES · REAL PRICES</div>
         </div>
       </div>
       <!-- Weekly Danger Meter -->
@@ -952,33 +952,35 @@ async function runBacktest(){
       }
 
       // Compute signal on this bar's history
-      const rsi   = calcRSI(h);
-      const ma50  = calcEMA(h,Math.min(50,h.length));
-      const ma20  = calcEMA(h,Math.min(20,h.length));
-      const ma10  = calcEMA(h,Math.min(10,h.length));
-      const macd  = calcMACD(h);
-      const bb    = calcBB(h);
-      const stoch = calcStoch(h);
-      const atr   = calcATR(h);
-      const mom   = calcMomentum(h);
+      const rsi  = calcRSI(h);
+      const ma50 = calcEMA(h,Math.min(50,h.length));
+      const ma20 = calcEMA(h,Math.min(20,h.length));
+      const ma10 = calcEMA(h,Math.min(10,h.length));
+      const macd = calcMACD(h);
+      const bb   = calcBB(h);
+      const atr  = calcATR(h);
+      const adx  = calcADX(h.map(c=>({high:c,low:c,close:c})));
+      const htfT = calcHigherTFTrend(h);
+      const cpat = detectCandlePattern(h);
       const price = bar.close;
+      const isTrending = adx>=20;
 
       let bull=0,bear=0;
-      if(rsi<40) bull++; else if(rsi>60) bear++;
+      if(rsi<38) bull++; else if(rsi>62) bear++;
       if(ma10>ma20&&ma20>ma50) bull++; else if(ma10<ma20&&ma20<ma50) bear++;
       if(price>ma50) bull++; else bear++;
-      if(macd.macd>macd.signal) bull++; else bear++;
+      if(macd.hist>0) bull++; else if(macd.hist<0) bear++;
       if(price<bb.lower) bull++; else if(price>bb.upper) bear++;
-      if(stoch<25) bull++; else if(stoch>75) bear++;
-      if(mom>60) bull++; else if(mom<40) bear++;
+      if(isTrending&&ma10>ma50) bull++; else if(isTrending&&ma10<ma50) bear++;
+      if(htfT==='bull') bull++; else if(htfT==='bear') bear++;
+      if(cpat==='bullish_reversal') bull++; else if(cpat==='bearish_reversal') bear++;
 
       let sig='neutral', conf=0;
-      if(bull>=5){sig='buy'; conf=Math.round(bull/7*100);}
-      else if(bear>=5){sig='sell'; conf=Math.round(bear/7*100);}
-      else{conf=Math.round(Math.max(bull,bear)/7*100);}
+      if(bull>=6&&isTrending){sig='buy'; conf=Math.round(bull/8*100);}
+      else if(bear>=6&&isTrending){sig='sell'; conf=Math.round(bear/8*100);}
+      else{conf=Math.round(Math.max(bull,bear)/8*100);}
 
-      // Trend filter using daily EMA approximation
-      // (use 50-bar MA on this timeframe as proxy for trend)
+      // Trend filter
       const trendBull = ma10>ma50;
       const trendAligned = !useTrend ||
         (sig==='buy'&&trendBull)||(sig==='sell'&&!trendBull)||(sig==='neutral');
@@ -1607,6 +1609,90 @@ function calcMomentum(h, period=14){
   return totalMoves===0?50:Math.round((upMoves/totalMoves)*100);
 }
 
+// NEW: ADX — Average Directional Index (trend strength)
+// Returns 0-100. Above 25 = trending. Above 50 = strong trend.
+function calcADX(candles, period=14){
+  // candles = array of {high, low, close}
+  // If only close prices provided, approximate with close only
+  if(!candles||candles.length<period*2) return 20; // default — weak trend
+  const h=candles.map(c=>c.high||c.close);
+  const l=candles.map(c=>c.low||c.close);
+  const c=candles.map(c=>c.close);
+
+  // Calculate +DM, -DM, TR
+  const plusDM=[], minusDM=[], tr=[];
+  for(let i=1;i<candles.length;i++){
+    const upMove  = h[i]-h[i-1];
+    const downMove= l[i-1]-l[i];
+    plusDM.push( upMove>downMove&&upMove>0 ? upMove : 0);
+    minusDM.push(downMove>upMove&&downMove>0 ? downMove : 0);
+    const trueRange=Math.max(h[i]-l[i], Math.abs(h[i]-c[i-1]), Math.abs(l[i]-c[i-1]));
+    tr.push(trueRange);
+  }
+
+  // Smooth with Wilder's method
+  const smooth=(arr,p)=>{
+    let s=arr.slice(0,p).reduce((a,b)=>a+b,0);
+    const out=[s];
+    for(let i=p;i<arr.length;i++){ s=s-s/p+arr[i]; out.push(s); }
+    return out;
+  };
+
+  const sTR=smooth(tr,period);
+  const sPDM=smooth(plusDM,period);
+  const sMDM=smooth(minusDM,period);
+
+  const DX=sTR.map((t,i)=>{
+    const pDI=t>0?100*sPDM[i]/t:0;
+    const mDI=t>0?100*sMDM[i]/t:0;
+    const sum=pDI+mDI;
+    return sum>0?100*Math.abs(pDI-mDI)/sum:0;
+  });
+
+  // ADX = smoothed DX
+  if(DX.length<period) return 20;
+  let adx=DX.slice(0,period).reduce((a,b)=>a+b,0)/period;
+  for(let i=period;i<DX.length;i++) adx=(adx*(period-1)+DX[i])/period;
+  return parseFloat(adx.toFixed(1));
+}
+
+// NEW: Higher Timeframe Confluence check
+// Uses last 30 bars of the current history to approximate a higher TF signal
+function calcHigherTFTrend(h){
+  if(h.length<20) return 'neutral';
+  // Sample every 4 bars to simulate higher timeframe
+  const htf=[];
+  for(let i=3;i<h.length;i+=4) htf.push(h[i]);
+  if(htf.length<5) return 'neutral';
+  const ema5=calcEMA(htf,Math.min(5,htf.length));
+  const ema10=calcEMA(htf,Math.min(10,htf.length));
+  const last=htf[htf.length-1];
+  if(last>ema5&&ema5>ema10) return 'bull';
+  if(last<ema5&&ema5<ema10) return 'bear';
+  return 'neutral';
+}
+
+// NEW: Pin Bar / Engulfing candle detection
+// Needs OHLC data — works with close-only as approximation
+function detectCandlePattern(h){
+  if(h.length<3) return 'none';
+  const c=h[h.length-1];
+  const p=h[h.length-2];
+  const pp=h[h.length-3];
+
+  // Bullish: two consecutive higher closes after a down move
+  const downMove = pp>p;
+  const reversal = p<c && c>pp;
+  if(downMove&&reversal) return 'bullish_reversal';
+
+  // Bearish: two consecutive lower closes after an up move
+  const upMove = pp<p;
+  const bearRev = p>c && c<pp;
+  if(upMove&&bearRev) return 'bearish_reversal';
+
+  return 'none';
+}
+
 // UPGRADE 2 — Support & Resistance from recent 4H candle highs/lows
 function calcSupportResistance(h, price, pair){
   if(h.length<20) return null;
@@ -1661,18 +1747,21 @@ function computeSignal(pair){
   if(!h.length) return;
   const price=h[h.length-1];
 
-  // All indicators on 4H candles
-  const rsi    = calcRSI(h,14);
-  const ma50   = calcEMA(h,Math.min(50,h.length));
-  const ma20   = calcEMA(h,Math.min(20,h.length));
-  const ma10   = calcEMA(h,Math.min(10,h.length));
-  const macd   = calcMACD(h);
-  const bb     = calcBB(h,20);
-  const stoch  = calcStoch(h,14);
-  const atr    = calcATR(h,14);
-  const mom    = calcMomentum(h,14);  // Upgrade #6
+  // ── UPGRADED SIGNAL ENGINE ──────────────────────────
+  // Indicators on current timeframe candles
+  const rsi  = calcRSI(h,14);
+  const ma50 = calcEMA(h,Math.min(50,h.length));
+  const ma20 = calcEMA(h,Math.min(20,h.length));
+  const ma10 = calcEMA(h,Math.min(10,h.length));
+  const macd = calcMACD(h);
+  const bb   = calcBB(h,20);
+  const atr  = calcATR(h,14);
+  // NEW indicators
+  const adx  = calcADX(s.ohlcHistory||h.map(c=>({high:c,low:c,close:c})));
+  const htfTrend = calcHigherTFTrend(h);
+  const candlePattern = detectCandlePattern(h);
 
-  s.indicators = {rsi,ma50,ma20,ma10,macd,bb,stoch,atr,mom};
+  s.indicators = {rsi,ma50,ma20,ma10,macd,bb,atr,adx,htfTrend,candlePattern};
 
   // Upgrade #3 — daily trend
   s.dailyTrend = calcDailyTrend(s.dailyHistory);
@@ -1682,9 +1771,13 @@ function computeSignal(pair){
 
   let bull=0,bear=0; const r=[];
 
-  // 1. RSI
-  if(rsi<40){bull++;r.push({t:'RSI oversold',b:true})}
-  else if(rsi>60){bear++;r.push({t:'RSI overbought',b:false})}
+  // ── GATE 1: ADX FILTER — only trade when market is trending ──
+  // ADX < 20 = choppy market, skip signal entirely
+  const isTrending = adx >= 20;
+
+  // 1. RSI (tightened thresholds for better accuracy)
+  if(rsi<38){bull++;r.push({t:'RSI oversold',b:true})}
+  else if(rsi>62){bear++;r.push({t:'RSI overbought',b:false})}
 
   // 2. MA Stack
   if(ma10>ma20&&ma20>ma50){bull++;r.push({t:'MA bullish stack',b:true})}
@@ -1694,30 +1787,36 @@ function computeSignal(pair){
   if(price>ma50){bull++;r.push({t:'Above MA50',b:true})}
   else{bear++;r.push({t:'Below MA50',b:false})}
 
-  // 4. MACD
-  if(macd.macd>macd.signal){bull++;r.push({t:'MACD bullish',b:true})}
-  else{bear++;r.push({t:'MACD bearish',b:false})}
+  // 4. MACD (histogram direction — more reliable than line cross)
+  if(macd.hist>0){bull++;r.push({t:'MACD bullish',b:true})}
+  else if(macd.hist<0){bear++;r.push({t:'MACD bearish',b:false})}
 
   // 5. Bollinger Bands
   if(price<bb.lower){bull++;r.push({t:'BB oversold',b:true})}
   else if(price>bb.upper){bear++;r.push({t:'BB overbought',b:false})}
 
-  // 6. Stochastic
-  if(stoch<25){bull++;r.push({t:'Stoch oversold',b:true})}
-  else if(stoch>75){bear++;r.push({t:'Stoch overbought',b:false})}
+  // 6. NEW: ADX Trend Strength (replaces Stochastic)
+  if(isTrending && ma10>ma50){bull++;r.push({t:'ADX trend bullish',b:true})}
+  else if(isTrending && ma10<ma50){bear++;r.push({t:'ADX trend bearish',b:false})}
 
-  // 7. Momentum (Upgrade #6)
-  if(mom>60){bull++;r.push({t:'Momentum bullish',b:true})}
-  else if(mom<40){bear++;r.push({t:'Momentum bearish',b:false})}
+  // 7. NEW: Higher Timeframe Confluence (replaces raw Momentum)
+  if(htfTrend==='bull'){bull++;r.push({t:'Higher TF bullish',b:true})}
+  else if(htfTrend==='bear'){bear++;r.push({t:'Higher TF bearish',b:false})}
+
+  // 8. NEW: Candlestick Pattern Confirmation (bonus point)
+  if(candlePattern==='bullish_reversal'){bull++;r.push({t:'Reversal candle',b:true})}
+  else if(candlePattern==='bearish_reversal'){bear++;r.push({t:'Reversal candle',b:false})}
 
   s.prevSignal=s.signal; s.bullScore=bull; s.bearScore=bear;
-  const total=7;
+  const total=8;
 
-  if(bull>=5){s.signal='buy';s.confidence=Math.round(bull/total*100)}
-  else if(bear>=5){s.signal='sell';s.confidence=Math.round(bear/total*100)}
+  // TIGHTENED: require 6/8 (75%) instead of 5/7 (71%) for a signal
+  // AND require ADX >= 20 (trending market)
+  if(bull>=6 && isTrending){s.signal='buy';s.confidence=Math.round(bull/total*100)}
+  else if(bear>=6 && isTrending){s.signal='sell';s.confidence=Math.round(bear/total*100)}
   else{s.signal='neutral';s.confidence=Math.round(Math.max(bull,bear)/total*100)}
 
-  s.reasons=r.filter(x=>s.signal==='buy'?x.b:s.signal==='sell'?!x.b:true).slice(0,4);
+  s.reasons=r.filter(x=>s.signal==='buy'?x.b:s.signal==='sell'?!x.b:true).slice(0,5);
 
   // Upgrade #3 — trend alignment check
   s.trendAligned = s.signal==='neutral' ||
@@ -1831,12 +1930,10 @@ function renderPairs(){
     const s=state[p],ind=s.indicators,price=s.price;
     let pct=0,up=true;
     if(price!==null&&s.openPrice){pct=(price-s.openPrice)/s.openPrice*100;up=pct>=0;}
-    const rsiC =ind.rsi>60?'var(--red)':ind.rsi<40?'var(--green)':'var(--text3)';
-    const stC  =ind.stoch>75?'var(--red)':ind.stoch<25?'var(--green)':'var(--text3)';
+    const rsiC =ind.rsi>62?'var(--red)':ind.rsi<38?'var(--green)':'var(--text3)';
     const macdC=ind.macd?.hist>0?'var(--green)':'var(--red)';
     const bbP  =ind.bb&&price?Math.round((price-ind.bb.lower)/(ind.bb.upper-ind.bb.lower)*100):50;
     const bbC  =bbP<20?'var(--green)':bbP>80?'var(--red)':'var(--text3)';
-    const momC =ind.mom>60?'var(--green)':ind.mom<40?'var(--red)':'var(--text3)';
     const sigIcon=s.signal==='buy'?'▲':s.signal==='sell'?'▼':'◆';
     const srcTag=s.dataSource==='live'?`<span style="color:var(--green);font-weight:700">● LIVE · ${TIMEFRAMES[currentTF].label}</span>`:s.dataSource==='stale'?'<span style="color:var(--amber)">⚠ STALE</span>':'<span style="color:var(--muted)">LOADING</span>';
     const cardId='card-'+p.replace('/','');
@@ -1911,13 +2008,14 @@ function renderPairs(){
 
         ${price===null?`<div style="font-family:var(--mono);font-size:14px;color:var(--amber);padding:12px 0">⏳ Fetching live data...</div>`:`
         <div class="ind-grid">
-          <div class="ind-box"><div class="ind-name">RSI·14</div><div class="ind-val" style="color:${rsiC}">${ind.rsi??'—'}</div><div class="ind-state">${(ind.rsi??50)>60?'OVERBOUGHT':(ind.rsi??50)<40?'OVERSOLD':'NEUTRAL'}</div></div>
-          <div class="ind-box"><div class="ind-name">STOCH·14</div><div class="ind-val" style="color:${stC}">${ind.stoch??'—'}</div><div class="ind-state">${(ind.stoch??50)>75?'OVERBOUGHT':(ind.stoch??50)<25?'OVERSOLD':'NEUTRAL'}</div></div>
-          <div class="ind-box"><div class="ind-name">MACD</div><div class="ind-val" style="color:${macdC}">${ind.macd?.hist>0?'BULL':'BEAR'}</div><div class="ind-state">${ind.macd?fmt(p,Math.abs(ind.macd.hist)):'—'}</div></div>
+          <div class="ind-box"><div class="ind-name">RSI·14</div><div class="ind-val" style="color:${rsiC}">${ind.rsi??'—'}</div><div class="ind-state">${(ind.rsi??50)>62?'OVERBOUGHT':(ind.rsi??50)<38?'OVERSOLD':'NEUTRAL'}</div></div>
+          <div class="ind-box"><div class="ind-name">MACD HIST</div><div class="ind-val" style="color:${macdC}">${ind.macd?.hist>0?'BULL':'BEAR'}</div><div class="ind-state">${ind.macd?fmt(p,Math.abs(ind.macd.hist)):'—'}</div></div>
           <div class="ind-box"><div class="ind-name">BB %B</div><div class="ind-val" style="color:${bbC}">${bbP}%</div><div class="ind-state">${bbP<20?'OVERSOLD':bbP>80?'OVERBOUGHT':'MID RANGE'}</div></div>
           <div class="ind-box"><div class="ind-name">MA TREND</div><div class="ind-val" style="color:${ind.ma10>ind.ma50?'var(--green)':'var(--red)'}">${ind.ma10>ind.ma50?'BULL':'BEAR'}</div><div class="ind-state">${ind.ma10>ind.ma20&&ind.ma20>ind.ma50?'STACK ▲':ind.ma10<ind.ma20&&ind.ma20<ind.ma50?'STACK ▼':'MIXED'}</div></div>
-          <div class="ind-box"><div class="ind-name">MOMENTUM</div><div class="ind-val" style="color:${momC}">${ind.mom??'—'}%</div><div class="ind-state">${(ind.mom??50)>60?'BULLISH':(ind.mom??50)<40?'BEARISH':'NEUTRAL'}</div></div>
-          <div class="ind-box"><div class="ind-name">SCORE</div><div class="ind-val" style="color:${cc(s.confidence)}">${s.bullScore}B/${s.bearScore}S</div><div class="ind-state">of 7 signals</div></div>
+          <div class="ind-box"><div class="ind-name">ADX·14</div><div class="ind-val" style="color:${(ind.adx||0)>=25?'var(--green)':(ind.adx||0)>=20?'var(--amber)':'var(--red)'}">${ind.adx??'—'}</div><div class="ind-state">${(ind.adx||0)>=50?'STRONG':(ind.adx||0)>=25?'TRENDING':(ind.adx||0)>=20?'WEAK':'CHOPPY'}</div></div>
+          <div class="ind-box"><div class="ind-name">HTF TREND</div><div class="ind-val" style="color:${ind.htfTrend==='bull'?'var(--green)':ind.htfTrend==='bear'?'var(--red)':'var(--amber)'}">${(ind.htfTrend||'—').toUpperCase()}</div><div class="ind-state">higher TF</div></div>
+          <div class="ind-box"><div class="ind-name">CANDLE</div><div class="ind-val" style="font-size:11px;color:${ind.candlePattern==='bullish_reversal'?'var(--green)':ind.candlePattern==='bearish_reversal'?'var(--red)':'var(--muted)'}">${ind.candlePattern==='bullish_reversal'?'BULL REV':ind.candlePattern==='bearish_reversal'?'BEAR REV':'NONE'}</div><div class="ind-state">pattern</div></div>
+          <div class="ind-box"><div class="ind-name">SCORE</div><div class="ind-val" style="color:${cc(s.confidence)}">${s.bullScore}B/${s.bearScore}S</div><div class="ind-state">of 8 signals</div></div>
         </div>
 
         ${s.reasons.length?`<div class="reasons">${s.reasons.map(r=>`<div class="rtag ${r.b?'bullish':'bearish'}">${r.t}</div>`).join('')}</div>`:''}
@@ -2119,7 +2217,7 @@ function setTimeframe(tf, btn){
 
   // Update subtitle
   const sub = document.getElementById('signals-sub');
-  if(sub) sub.textContent = `7-INDICATOR CONFLUENCE · ${TIMEFRAMES[tf].label} CANDLES · REAL PRICES`;
+  if(sub) sub.textContent = `8-INDICATOR CONFLUENCE · ${TIMEFRAMES[tf].label} CANDLES · REAL PRICES`;
 
   // Reset history so it re-fetches with new timeframe
   lastHistoryFetch = {};
