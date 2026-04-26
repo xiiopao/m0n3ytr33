@@ -375,6 +375,12 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .safe-window-text{font-family:var(--mono);font-size:12px;line-height:1.7}
 .safe-window-text strong{color:var(--green);font-size:14px}
 
+/* PENDING SIGNAL PULSE */
+@keyframes pendingPulse{
+  0%,100%{opacity:1;border-color:rgba(167,139,250,0.25)}
+  50%{opacity:0.7;border-color:rgba(167,139,250,0.6)}
+}
+
 /* TIMEFRAME SELECTOR */
 .tf-selector{display:flex;gap:6px;align-items:center}
 .tf-btn{
@@ -715,6 +721,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
               📥 Fetches max historical candles<br>
               🔄 Runs all 7 indicators on each bar<br>
               📊 Simulates BUY/SELL on signal changes<br>
+              ⏳ Confirmation candle required<br>
               🛑 Applies ATR-based SL + TP1 + TP2<br>
               💰 Tracks P&L bar by bar<br>
               📈 Shows equity curve + trade log<br>
@@ -791,15 +798,17 @@ try{ trades = JSON.parse(localStorage.getItem('fx_trades')||'[]'); }catch(e){}
 PAIRS.forEach(p=>{
   state[p]={
     price:null, openPrice:null,
-    history:[],       // 4H candles
+    history:[],       // candles
     dailyHistory:[],  // daily candles for trend filter
     confHistory:[],   // confidence over time for mini chart
     prevSignal:'neutral', signal:'neutral',
+    prevRawSignal:null, // for confirmation candle rule
+    pendingSignal:null, // signal waiting for confirmation
     confidence:0, indicators:{}, reasons:[],
     bullScore:0, bearScore:0,
     dataSource:'loading', plan:null,
-    sr:null,          // support & resistance
-    dailyTrend:'neutral', // upgrade #3
+    sr:null,
+    dailyTrend:'neutral',
     trendAligned:true
   };
 });
@@ -975,18 +984,35 @@ async function runBacktest(){
       if(htfT==='bull') bull++; else if(htfT==='bear') bear++;
       if(cpat==='bullish_reversal') bull++; else if(cpat==='bearish_reversal') bear++;
 
-      let sig='neutral', conf=0;
-      if(bull>=6&&isTrending){sig='buy'; conf=Math.round(bull/8*100);}
-      else if(bear>=6&&isTrending){sig='sell'; conf=Math.round(bear/8*100);}
+      // Raw signal
+      let rawSig='neutral', conf=0;
+      if(bull>=6&&isTrending){rawSig='buy'; conf=Math.round(bull/8*100);}
+      else if(bear>=6&&isTrending){rawSig='sell'; conf=Math.round(bear/8*100);}
       else{conf=Math.round(Math.max(bull,bear)/8*100);}
 
       // Trend filter
       const trendBull = ma10>ma50;
       const trendAligned = !useTrend ||
-        (sig==='buy'&&trendBull)||(sig==='sell'&&!trendBull)||(sig==='neutral');
+        (rawSig==='buy'&&trendBull)||(rawSig==='sell'&&!trendBull)||(rawSig==='neutral');
 
-      // Open trade if signal changed and meets criteria
-      if(sig!=='neutral' && sig!==prevSig && conf>=minConf && trendAligned){
+      // ── CONFIRMATION CANDLE RULE ────────────────────
+      // The signal from the PREVIOUS bar must match rawSig
+      // AND current candle must close in the signal direction
+      const prevClose = i>0 ? candles[i-1].close : bar.close;
+      const bullConfirm = prevSig==='buy'  && bar.close>prevClose;
+      const bearConfirm = prevSig==='sell' && bar.close<prevClose;
+
+      let sig = 'neutral';
+      if(rawSig==='buy')  sig='buy';   // store for next bar
+      if(rawSig==='sell') sig='sell';
+
+      // Confirmed entry only when previous bar had raw signal
+      // AND current bar closed confirming it
+      const confirmedEntry = (bullConfirm && prevSig==='buy') ||
+                             (bearConfirm && prevSig==='sell');
+
+      // Open trade if confirmed and meets criteria
+      if(confirmedEntry && conf>=minConf && trendAligned){
         const slDist   = Math.max(atr*1.5, minSLpips*pipU);
         const slPips   = Math.round(slDist/pipU);
         const tp1Pips  = Math.round(slPips*1.5);
@@ -1005,7 +1031,7 @@ async function runBacktest(){
           tp1Hit:false, partialProfit:0,
         };
       }
-      prevSig=sig;
+      prevSig=rawSig; // track raw signal for confirmation next bar
     }
 
     setProgress(90,'Calculating results...');
@@ -1807,16 +1833,49 @@ function computeSignal(pair){
   if(candlePattern==='bullish_reversal'){bull++;r.push({t:'Reversal candle',b:true})}
   else if(candlePattern==='bearish_reversal'){bear++;r.push({t:'Reversal candle',b:false})}
 
-  s.prevSignal=s.signal; s.bullScore=bull; s.bearScore=bear;
+  s.bullScore=bull; s.bearScore=bear;
   const total=8;
 
-  // TIGHTENED: require 6/8 (75%) instead of 5/7 (71%) for a signal
-  // AND require ADX >= 20 (trending market)
-  if(bull>=6 && isTrending){s.signal='buy';s.confidence=Math.round(bull/total*100)}
-  else if(bear>=6 && isTrending){s.signal='sell';s.confidence=Math.round(bear/total*100)}
-  else{s.signal='neutral';s.confidence=Math.round(Math.max(bull,bear)/total*100)}
+  // Raw signal from indicators
+  let rawSignal='neutral';
+  if(bull>=6 && isTrending) rawSignal='buy';
+  else if(bear>=6 && isTrending) rawSignal='sell';
 
-  s.reasons=r.filter(x=>s.signal==='buy'?x.b:s.signal==='sell'?!x.b:true).slice(0,5);
+  // ── CONFIRMATION CANDLE RULE ─────────────────────────
+  // Don't enter on the signal candle itself.
+  // Wait for the NEXT candle to CLOSE in the signal direction.
+  // prevRawSignal tracks what signal fired on the PREVIOUS bar.
+  // Current bar must then close confirming that direction.
+  const prevClose = h[h.length-2]||price;
+  const bullConfirm = s.prevRawSignal==='buy'  && price>prevClose; // candle closed up
+  const bearConfirm = s.prevRawSignal==='sell' && price<prevClose; // candle closed down
+
+  if(rawSignal!=='neutral'){
+    // Store raw signal for next bar to check
+    s.prevRawSignal = rawSignal;
+  }
+
+  // Only set confirmed signal if confirmation candle occurred
+  let confirmedSignal = 'neutral';
+  if(bullConfirm && s.prevRawSignal==='buy')  confirmedSignal='buy';
+  if(bearConfirm && s.prevRawSignal==='sell') confirmedSignal='sell';
+
+  // If confirmed, clear prevRawSignal so we don't fire again
+  if(confirmedSignal!=='neutral') s.prevRawSignal=null;
+
+  s.prevSignal=s.signal;
+  s.signal = confirmedSignal;
+  s.confidence = confirmedSignal==='neutral'
+    ? Math.round(Math.max(bull,bear)/total*100)
+    : Math.round(Math.max(bull,bear)/total*100);
+
+  // Show pending signal in card so user knows one is brewing
+  s.pendingSignal = rawSignal!=='neutral' && confirmedSignal==='neutral' ? rawSignal : null;
+
+  s.reasons=r.filter(x=>s.signal!=='neutral'?
+    (s.signal==='buy'?x.b:!x.b):
+    (rawSignal==='buy'?x.b:rawSignal==='sell'?!x.b:true)
+  ).slice(0,5);
 
   // Upgrade #3 — trend alignment check
   s.trendAligned = s.signal==='neutral' ||
@@ -1986,6 +2045,12 @@ function renderPairs(){
         </div>
 
         ${trendWarn}
+
+        ${s.pendingSignal?`
+        <div style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:9px 14px;margin-bottom:12px;font-family:var(--mono);font-size:12px;color:var(--purple);display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">⏳</span>
+          <span><strong>${s.pendingSignal.toUpperCase()} SIGNAL PENDING</strong> — Waiting for confirmation candle to close ${s.pendingSignal==='buy'?'above':'below'} current price before entry</span>
+        </div>`:''}
 
         <div class="sig-row">
           <div class="sig-badge ${s.signal}">${sigIcon} ${s.signal.toUpperCase()}</div>
