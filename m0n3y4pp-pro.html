@@ -59,16 +59,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .status-bar.loading .status-msg{color:var(--amber)}
 .status-msg{font-weight:700}.status-time{color:var(--muted)}
 
-/* NEWS ALERT BANNER */
-.news-banner{display:none;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:12px 18px;margin-bottom:16px;font-family:var(--mono);font-size:12px;color:var(--amber)}
-.news-banner.show{display:flex;align-items:flex-start;gap:10px}
-.news-banner-icon{font-size:18px;flex-shrink:0}
-.news-items{display:flex;flex-direction:column;gap:4px}
-.news-item{display:flex;align-items:center;gap:8px}
-.news-impact{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
-.news-impact.high{background:rgba(251,113,133,0.2);color:var(--red)}
-.news-impact.medium{background:rgba(251,191,36,0.2);color:var(--amber)}
-
 /* PAGE */
 .page{display:none}.page.active{display:block}
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
@@ -295,86 +285,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .login-remember input{width:16px;height:16px;accent-color:var(--acc);cursor:pointer}
 .login-remember span{font-family:var(--mono);font-size:11px;color:var(--text2)}
 
-/* WEEKLY DANGER METER */
-.danger-meter{
-  background:var(--s1);border:1px solid var(--border);
-  border-radius:14px;padding:18px 22px;margin-bottom:20px;
-}
-.danger-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.danger-title{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
-.danger-level{display:flex;align-items:center;gap:10px}
-.danger-badge{
-  font-family:var(--mono);font-size:13px;font-weight:700;
-  padding:6px 16px;border-radius:20px;letter-spacing:1px;
-}
-.danger-badge.safe{background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3)}
-.danger-badge.caution{background:rgba(251,191,36,0.12);color:var(--amber);border:1px solid rgba(251,191,36,0.3)}
-.danger-badge.danger{background:rgba(251,113,133,0.12);color:var(--red);border:1px solid rgba(251,113,133,0.3)}
-.danger-badge.extreme{background:rgba(251,113,133,0.2);color:var(--red);border:2px solid var(--red);animation:pulseRed 1.5s infinite}
-@keyframes pulseRed{0%,100%{box-shadow:0 0 0 0 rgba(251,113,133,0.4)}50%{box-shadow:0 0 0 8px rgba(251,113,133,0)}}
-.danger-bar-wrap{display:flex;gap:3px;margin-bottom:10px}
-.danger-segment{flex:1;height:8px;border-radius:4px;background:var(--border2);transition:background .5s}
-.danger-segment.active.safe{background:var(--green)}
-.danger-segment.active.caution{background:var(--amber)}
-.danger-segment.active.danger{background:var(--red)}
-.danger-segment.active.extreme{background:var(--red)}
-.danger-advice{
-  font-family:var(--mono);font-size:12px;line-height:1.7;
-  padding:10px 14px;border-radius:8px;
-}
-.danger-advice.safe{background:rgba(52,211,153,0.06);color:var(--green);border:1px solid rgba(52,211,153,0.15)}
-.danger-advice.caution{background:rgba(251,191,36,0.06);color:var(--amber);border:1px solid rgba(251,191,36,0.15)}
-.danger-advice.danger{background:rgba(251,113,133,0.06);color:var(--red);border:1px solid rgba(251,113,133,0.15)}
-.danger-advice.extreme{background:rgba(251,113,133,0.1);color:var(--red);border:1px solid var(--red)}
-.danger-events-count{font-family:var(--mono);font-size:11px;color:var(--text2)}
-
-/* NEWS PAGE */
-.news-week-grid{display:flex;flex-direction:column;gap:8px}
-.news-day-group{background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.news-day-header{
-  padding:12px 18px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--border);
-}
-.news-day-label{font-family:var(--display);font-weight:700;font-size:15px}
-.news-day-count{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.news-event-row{
-  padding:11px 18px;display:flex;align-items:center;gap:14px;
-  border-bottom:1px solid var(--border);transition:background .15s;
-}
-.news-event-row:last-child{border-bottom:none}
-.news-event-row:hover{background:var(--s2)}
-.news-impact-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.news-impact-dot.high{background:var(--red);box-shadow:0 0 8px var(--red)}
-.news-impact-dot.medium{background:var(--amber)}
-.news-impact-dot.low{background:var(--green2)}
-.news-event-time{font-family:var(--mono);font-size:12px;color:var(--text2);width:70px;flex-shrink:0}
-.news-event-currency{font-family:var(--mono);font-size:12px;font-weight:700;width:36px;flex-shrink:0}
-.news-event-currency.usd{color:var(--acc)}
-.news-event-currency.eur{color:var(--purple)}
-.news-event-currency.gbp{color:var(--amber)}
-.news-event-name{flex:1;font-size:13px;color:var(--text)}
-.news-event-impact{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px}
-.news-event-impact.high{background:rgba(251,113,133,0.15);color:var(--red)}
-.news-event-impact.medium{background:rgba(251,191,36,0.12);color:var(--amber)}
-.news-event-impact.low{background:rgba(52,211,153,0.1);color:var(--green)}
-.news-avoid-tag{
-  font-family:var(--mono);font-size:10px;
-  background:rgba(251,113,133,0.1);color:var(--red);
-  border:1px solid rgba(251,113,133,0.2);
-  border-radius:4px;padding:2px 6px;flex-shrink:0;
-}
-.news-loading{padding:40px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px}
-
-/* NEXT SAFE WINDOW */
-.safe-window{
-  background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);
-  border-radius:12px;padding:14px 18px;margin-bottom:16px;
-  display:flex;align-items:center;gap:12px;
-}
-.safe-window-icon{font-size:24px}
-.safe-window-text{font-family:var(--mono);font-size:12px;line-height:1.7}
-.safe-window-text strong{color:var(--green);font-size:14px}
-
 /* PENDING SIGNAL PULSE */
 @keyframes pendingPulse{
   0%,100%{opacity:1;border-color:rgba(167,139,250,0.25)}
@@ -573,10 +483,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alerts
       <span id="alert-badge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:11px;font-family:var(--mono);padding:2px 7px;border-radius:10px"></span>
     </button>
-    <button class="nav-item" onclick="showPage('news',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6z"/></svg>News Calendar
-      <span id="news-badge" style="display:none;margin-left:auto;background:var(--red);color:white;font-size:11px;font-family:var(--mono);padding:2px 7px;border-radius:10px">!</span>
-    </button>
     <button class="nav-item" onclick="showPage('backtest',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Backtest
     </button>
@@ -585,8 +491,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       📊 5M / 1H / 4H candles<br>
       📈 Daily trend filter<br>
       🎯 Support &amp; resistance<br>
-      📰 Weekly news calendar<br>
-      🚦 Danger level meter<br>
       📉 Confidence history<br>
       💪 Momentum score<br>
       ⚡ ATR trade plans<br>
@@ -602,15 +506,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="status-time" id="status-time">—</div>
     </div>
 
-    <!-- NEWS BANNER -->
-    <div class="news-banner" id="news-banner">
-      <div class="news-banner-icon">📰</div>
-      <div>
-        <div style="font-weight:700;margin-bottom:6px;letter-spacing:1px">⚠️ HIGH IMPACT NEWS EVENTS — AVOID TRADING NOW</div>
-        <div class="news-items" id="news-items"></div>
-      </div>
-    </div>
-
     <!-- PAGE: SIGNALS -->
     <div class="page active" id="page-signals">
       <div class="sec-hdr">
@@ -623,29 +518,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <!-- Active strategy info banner -->
       <div class="strategy-info reversion" id="strategy-info">
         <strong>🔄 Mean Reversion Strategy</strong> — Buys when price is at the lower Bollinger Band extreme, sells at the upper extreme. Targets a return to the mean (middle band). Optimized for ranging pairs like EUR/GBP and EUR/CHF.
-      </div>
-      <!-- Weekly Danger Meter -->
-      <div class="danger-meter" id="danger-meter">
-        <div class="danger-header">
-          <div>
-            <div class="danger-title">📊 Weekly Trading Danger Level</div>
-            <div class="danger-events-count" id="danger-events-count">Loading news calendar...</div>
-          </div>
-          <div class="danger-badge safe" id="danger-badge">LOADING</div>
-        </div>
-        <div class="danger-bar-wrap" id="danger-bar-wrap">
-          <div class="danger-segment" id="ds0"></div>
-          <div class="danger-segment" id="ds1"></div>
-          <div class="danger-segment" id="ds2"></div>
-          <div class="danger-segment" id="ds3"></div>
-          <div class="danger-segment" id="ds4"></div>
-          <div class="danger-segment" id="ds5"></div>
-          <div class="danger-segment" id="ds6"></div>
-          <div class="danger-segment" id="ds7"></div>
-          <div class="danger-segment" id="ds8"></div>
-          <div class="danger-segment" id="ds9"></div>
-        </div>
-        <div class="danger-advice safe" id="danger-advice">Checking economic calendar...</div>
       </div>
       <!-- Daily trend bar -->
       <div class="trend-bar" id="trend-bar"></div>
@@ -812,21 +684,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       </div>
     </div>
 
-    <!-- PAGE: NEWS CALENDAR -->
-    <div class="page" id="page-news">
-      <div class="sec-hdr">
-        <div>
-          <div class="sec-title">News Calendar</div>
-          <div class="sec-sub">THIS WEEK'S HIGH IMPACT EVENTS · AVOID TRADING 2HRS BEFORE/AFTER RED</div>
-        </div>
-        <button class="form-btn" style="width:auto;padding:10px 20px;font-size:14px" onclick="fetchWeeklyNews()">🔄 Refresh</button>
-      </div>
-      <div class="safe-window" id="safe-window" style="display:none">
-        <div class="safe-window-icon">✅</div>
-        <div class="safe-window-text" id="safe-window-text"></div>
-      </div>
-      <div id="news-week-container"><div class="news-loading">📰 Loading this week's economic calendar...</div></div>
-    </div>
 
   </div>
 </div>
@@ -862,7 +719,6 @@ let lastHistoryFetch = {};
 let lastDailyFetch   = {};
 let fetchTimer       = null;
 let lastFetch        = null;
-let newsEvents       = [];
 
 try{ trades = JSON.parse(localStorage.getItem('fx_trades')||'[]'); }catch(e){}
 
@@ -1312,267 +1168,6 @@ function drawEquityCurve(curve, startBalance){
 }
 
 // ═══════════════════════════════════════════════
-// NEWS CALENDAR — WEEKLY + DANGER METER
-// ═══════════════════════════════════════════════
-
-let weeklyNews = [];      // all events this week
-let todayNews  = [];      // events today
-let dangerLevel = 0;      // 0-10
-
-// High impact events that directly affect EUR/GBP and EUR/CHF
-const KEY_EVENTS = [
-  'CPI','inflation','NFP','non-farm','payroll','Fed','FOMC','rate decision',
-  'rate hike','rate cut','GDP','PMI','employment','jobless','retail sales',
-  'Powell','Lagarde','BOE','ECB','central bank','interest rate',
-  'consumer price','producer price','PPI','PCE','trade balance'
-];
-
-function isKeyEvent(name){
-  const n = (name||'').toLowerCase();
-  return KEY_EVENTS.some(k => n.includes(k.toLowerCase()));
-}
-
-async function fetchWeeklyNews(){
-  // The Twelve Data economic_calendar endpoint is on Ultra+ plans only ($329/mo).
-  // Show a friendly message directing user to free external calendar instead.
-  weeklyNews = [];
-  todayNews = [];
-  dangerLevel = 0;
-  renderDangerMeter('unavailable');
-  renderWeeklyCalendar();
-}
-
-function computeDangerLevel(){
-  // Score based on high impact events this week
-  const highCount = weeklyNews.filter(e=>e.importance==='High').length;
-  const medCount  = weeklyNews.filter(e=>e.importance==='Medium').length;
-  const keyCount  = weeklyNews.filter(e=>isKeyEvent(e.event)).length;
-
-  // Raw score
-  let score = (highCount * 2) + (medCount * 0.5) + (keyCount * 1.5);
-
-  // Cap at 10
-  dangerLevel = Math.min(10, Math.round(score));
-
-  // Check if there's a high impact event TODAY
-  const todayHigh = todayNews.filter(e=>e.importance==='High').length;
-  if(todayHigh>=2) dangerLevel = Math.max(dangerLevel, 8);
-  if(todayHigh>=3) dangerLevel = 10;
-}
-
-function getDangerClass(level){
-  if(level<=2) return 'safe';
-  if(level<=5) return 'caution';
-  if(level<=7) return 'danger';
-  return 'extreme';
-}
-
-function getDangerLabel(level){
-  if(level<=2) return '✅ SAFE TO TRADE';
-  if(level<=5) return '⚠️ TRADE WITH CAUTION';
-  if(level<=7) return '🚫 HIGH RISK WEEK';
-  return '🔴 EXTREME DANGER — AVOID';
-}
-
-function getDangerAdvice(level, cls){
-  if(cls==='safe') return '✅ Good week to trade. News risk is low. Focus on HIGH CONF signals during the London/NY overlap (7–11 AM CDT).';
-  if(cls==='caution') return '⚠️ Moderate news week. Check the News Calendar tab before every trade. Avoid trading 2 hours before and after red events.';
-  if(cls==='danger') return '🚫 High risk week. Multiple major events can cause sudden 50-100 pip spikes. Consider reducing position size by 50% or sitting this week out.';
-  return '🔴 EXTREME DANGER. This is one of the worst weeks to trade. Central bank decisions or major data releases can reverse the market in seconds. Strongly recommend NO trading this week — watch and learn instead.';
-}
-
-function renderDangerMeter(state=false){
-  const badge   = document.getElementById('danger-badge');
-  const advice  = document.getElementById('danger-advice');
-  const count   = document.getElementById('danger-events-count');
-  const newsBadge = document.getElementById('news-badge');
-
-  if(state==='unavailable'){
-    badge.textContent='📅 EXTERNAL CALENDAR';
-    badge.className='danger-badge caution';
-    advice.innerHTML='News calendar requires Twelve Data Ultra plan ($329/mo). For now, check the free <strong><a href="https://www.forexfactory.com/calendar" target="_blank" style="color:inherit;text-decoration:underline">ForexFactory.com calendar</a></strong> before each trading session. Avoid trading 2 hours before red folder news events.';
-    advice.className='danger-advice caution';
-    count.textContent='Manually check ForexFactory before each trading session';
-    // Empty all segments
-    for(let i=0;i<10;i++){
-      const seg = document.getElementById('ds'+i);
-      if(seg) seg.className='danger-segment';
-    }
-    if(newsBadge) newsBadge.style.display='none';
-    return;
-  }
-
-  if(state===true){
-    badge.textContent='UNKNOWN';badge.className='danger-badge caution';
-    advice.innerHTML='Could not load calendar. Check manually at <a href="https://www.forexfactory.com/calendar" target="_blank" style="color:inherit;text-decoration:underline"><strong>ForexFactory.com</strong></a>';
-    advice.className='danger-advice caution';
-    return;
-  }
-
-  const cls   = getDangerClass(dangerLevel);
-  const label = getDangerLabel(dangerLevel);
-  const adv   = getDangerAdvice(dangerLevel, cls);
-
-  badge.textContent  = label;
-  badge.className    = `danger-badge ${cls}`;
-  advice.textContent = adv;
-  advice.className   = `danger-advice ${cls}`;
-
-  const highCount = weeklyNews.filter(e=>e.importance==='High').length;
-  const medCount  = weeklyNews.filter(e=>e.importance==='Medium').length;
-  count.textContent = `${highCount} high impact · ${medCount} medium impact events this week · Danger score: ${dangerLevel}/10`;
-
-  // Fill danger bar segments
-  for(let i=0;i<10;i++){
-    const seg = document.getElementById('ds'+i);
-    if(!seg) continue;
-    if(i<dangerLevel){
-      seg.className=`danger-segment active ${cls}`;
-    } else {
-      seg.className='danger-segment';
-    }
-  }
-
-  // Show red badge on nav if danger >= 7
-  if(dangerLevel>=7){
-    newsBadge.style.display='inline';
-    newsBadge.textContent='!';
-  } else {
-    newsBadge.style.display='none';
-  }
-}
-
-function renderTodayNewsBanner(){
-  // Show banner for events within next 2 hours or past 30 min
-  const now = Date.now();
-  const imminent = todayNews.filter(e=>{
-    try{
-      const t = new Date(e.date).getTime();
-      return (t-now)<7200000 && (now-t)<1800000 && e.importance==='High';
-    }catch(x){return false;}
-  });
-
-  const banner = document.getElementById('news-banner');
-  const items  = document.getElementById('news-items');
-
-  if(!imminent.length){ banner.classList.remove('show'); return; }
-  banner.classList.add('show');
-  items.innerHTML = imminent.map(e=>`
-    <div class="news-item">
-      <span class="news-impact ${(e.importance||'').toLowerCase()}">${(e.importance||'').toUpperCase()}</span>
-      <span style="color:var(--text);font-weight:600">${e.event||e.title||'Economic Event'}</span>
-      <span style="color:var(--muted)">${e.country} · ${new Date(e.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} local</span>
-    </div>`).join('');
-}
-
-function renderWeeklyCalendar(){
-  const container = document.getElementById('news-week-container');
-  if(!weeklyNews.length){
-    container.innerHTML=`
-      <div style="padding:40px;text-align:center;background:var(--s1);border:1px solid var(--border);border-radius:14px">
-        <div style="font-size:48px;margin-bottom:16px">📅</div>
-        <div style="font-family:var(--display);font-size:18px;font-weight:700;margin-bottom:8px">Calendar Endpoint Unavailable on Free Plan</div>
-        <div style="font-family:var(--mono);font-size:13px;color:var(--text2);line-height:1.8;max-width:540px;margin:0 auto 20px">
-          The Twelve Data economic_calendar endpoint requires the Ultra plan ($329/mo).
-          For now, please use the free <strong>ForexFactory calendar</strong> — the most popular and trusted economic calendar for forex traders.
-        </div>
-        <a href="https://www.forexfactory.com/calendar" target="_blank" style="display:inline-block;background:linear-gradient(135deg,var(--acc2),var(--purple));color:white;padding:12px 28px;border-radius:10px;text-decoration:none;font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.5px">
-          Open ForexFactory Calendar →
-        </a>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:24px;line-height:1.8">
-          ⛔ Avoid trading 2 hours before/after red folder events<br>
-          🟡 Yellow folder events also cause volatility — be cautious<br>
-          ✅ Best trading window: 7-11 AM CDT (London/NY overlap)
-        </div>
-      </div>`;
-    // Hide safe window banner
-    const sw = document.getElementById('safe-window');
-    if(sw) sw.style.display='none';
-    return;
-  }
-
-  // Group by day
-  const byDay = {};
-  weeklyNews.forEach(e=>{
-    const day = (e.date||'').split('T')[0];
-    if(!byDay[day]) byDay[day]=[];
-    byDay[day].push(e);
-  });
-
-  // Find next safe trading window (no high events in next 2 hours)
-  const now = Date.now();
-  const nextHigh = weeklyNews
-    .filter(e=>e.importance==='High' && new Date(e.date).getTime()>now)
-    .sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
-
-  // Safe window display
-  const safeWindow = document.getElementById('safe-window');
-  const safeText   = document.getElementById('safe-window-text');
-  if(nextHigh){
-    const t = new Date(nextHigh.date);
-    const safe2hrBefore = new Date(t.getTime()-7200000);
-    const safeAfter     = new Date(t.getTime()+1800000);
-    safeWindow.style.display='flex';
-    safeText.innerHTML = `<strong>Next HIGH impact event:</strong> ${nextHigh.event||'Major Event'} (${nextHigh.country}) at ${t.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}<br>⛔ Avoid trading from <strong>${safe2hrBefore.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong> until <strong>${safeAfter.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</strong> on that day`;
-  } else {
-    safeWindow.style.display='flex';
-    safeText.innerHTML='<strong>✅ No upcoming high impact events found.</strong> Safe to trade during the London/NY overlap (7–11 AM CDT).';
-  }
-
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
-  container.innerHTML = Object.entries(byDay).map(([date,events])=>{
-    const d = new Date(date+'T12:00:00');
-    const dayName = days[d.getDay()];
-    const dateLabel = d.toLocaleDateString([],{month:'short',day:'numeric'});
-    const highCount = events.filter(e=>e.importance==='High').length;
-
-    return `
-      <div class="news-day-group">
-        <div class="news-day-header">
-          <div class="news-day-label">${dayName} · ${dateLabel}
-            ${highCount>0?`<span style="font-family:var(--mono);font-size:11px;color:var(--red);margin-left:8px">🔴 ${highCount} high impact</span>`:''}
-          </div>
-          <div class="news-day-count">${events.length} events</div>
-        </div>
-        ${events.filter(e=>['High','Medium'].includes(e.importance)).map(e=>{
-          const imp = (e.importance||'low').toLowerCase();
-          const isKey = isKeyEvent(e.event);
-          const t = e.date?new Date(e.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'TBD';
-          const cur = (e.country||'').toLowerCase();
-          return `
-            <div class="news-event-row">
-              <div class="news-impact-dot ${imp}"></div>
-              <div class="news-event-time">${t}</div>
-              <div class="news-event-currency ${cur}">${e.country||'—'}</div>
-              <div class="news-event-name">${e.event||'Economic Event'}</div>
-              <div class="news-event-impact ${imp}">${e.importance||''}</div>
-              ${isKey&&imp==='high'?'<div class="news-avoid-tag">⛔ AVOID</div>':''}
-            </div>`;
-        }).join('')}
-      </div>`;
-  }).join('');
-}
-
-async function fetchNewsCalendar(){
-  // Now handled by fetchWeeklyNews()
-  await fetchWeeklyNews();
-}
-
-function renderNewsBanner(){
-  const banner  = document.getElementById('news-banner');
-  const items   = document.getElementById('news-items');
-  if(!newsEvents.length){ banner.classList.remove('show'); return; }
-  banner.classList.add('show');
-  items.innerHTML = newsEvents.slice(0,5).map(e=>`
-    <div class="news-item">
-      <span class="news-impact ${e.importance==='High'?'high':'medium'}">${e.importance.toUpperCase()}</span>
-      <span style="color:var(--text)">${e.event||e.title||'Economic Event'}</span>
-      <span style="color:var(--muted)">${e.country} · ${new Date(e.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
-    </div>`).join('');
-}
-
-// ═══════════════════════════════════════════════
 // TWELVE DATA FETCH — DYNAMIC TIMEFRAME
 // ═══════════════════════════════════════════════
 async function fetchFourHourHistory(pair){
@@ -1619,9 +1214,6 @@ async function fetchAllPrices(forceHistory=false){
   setStatus('loading','Fetching live data...');
   const now = Date.now();
   let ok=0;
-
-  // Fetch news calendar once per session
-  if(!newsEvents.length) fetchNewsCalendar();
 
   for(const pair of PAIRS){
     try{
@@ -1902,30 +1494,47 @@ function calcMeanReversionSignal(h, pair){
   if(bbPos.zscore>=1.5){bear++;reasons.push({t:'Z-score extreme high',b:false})}
 
   const total=4;
-  if(bull>=3){signal='buy'; confidence=Math.round(bull/total*100);}
-  else if(bear>=3){signal='sell'; confidence=Math.round(bear/total*100);}
+  // Require BB extreme as MANDATORY condition (not optional confluence)
+  // This prevents firing signals when price is too close to mean (tiny TP)
+  const atExtremeBuy  = bbPos.pos<=15;
+  const atExtremeSell = bbPos.pos>=85;
+
+  if(bull>=3 && atExtremeBuy){signal='buy'; confidence=Math.round(bull/total*100);}
+  else if(bear>=3 && atExtremeSell){signal='sell'; confidence=Math.round(bear/total*100);}
   else{confidence=Math.round(Math.max(bull,bear)/total*100);}
 
   // Mean reversion SL/TP
   // SL: beyond the extreme (1.5× BB width away)
   // TP: back to the mean (middle band)
-  const slDist = Math.abs(price - (signal==='buy'?bbPos.lower:bbPos.upper)) * 0.5;
-  const tpDist = Math.abs(price - bbPos.mid);
-  const slPips = Math.round(Math.max(slDist,15*pipU)/pipU);
-  const tp1Pips= Math.round(tpDist*0.5/pipU);
-  const tp2Pips= Math.round(tpDist/pipU);
+  // ATR provides a baseline so TPs are never absurdly small
+  const atrUnits = calcATR(h, 14);
+  const slDist   = Math.max(
+    Math.abs(price - (signal==='buy'?bbPos.lower:bbPos.upper)) * 0.5,
+    atrUnits * 1.0  // SL must be at least 1 ATR away
+  );
+  const rawTpDist = Math.abs(price - bbPos.mid);
+  // TP must be at least 1.5× ATR — otherwise it's not worth taking the trade
+  const tpDist = Math.max(rawTpDist, atrUnits * 1.5);
+  const minTPpips = TIMEFRAMES[currentTF]?.minSLpips?.[pair] || 20;
+  const slPips = Math.round(Math.max(slDist, minTPpips*pipU) / pipU);
+  const tp1Pips= Math.max(minTPpips, Math.round(tpDist*0.5/pipU));
+  const tp2Pips= Math.max(Math.round(minTPpips*1.5), Math.round(tpDist/pipU));
 
   let plan=null;
   if(signal==='buy'){
+    const tp1Price = price + tp1Pips*pipU;
+    const tp2Price = price + tp2Pips*pipU;
     plan={
-      sl:price-slPips*pipU, tp1:price+tp1Pips*pipU, tp2:bbPos.mid,
-      slPips, tp1Pips, tp2Pips:Math.round(tpDist/pipU), usedMin:false,
+      sl:price-slPips*pipU, tp1:tp1Price, tp2:tp2Price,
+      slPips, tp1Pips, tp2Pips, usedMin:false,
       srWarning:null, target:'Mean (middle BB)',
     };
   } else if(signal==='sell'){
+    const tp1Price = price - tp1Pips*pipU;
+    const tp2Price = price - tp2Pips*pipU;
     plan={
-      sl:price+slPips*pipU, tp1:price-tp1Pips*pipU, tp2:bbPos.mid,
-      slPips, tp1Pips, tp2Pips:Math.round(tpDist/pipU), usedMin:false,
+      sl:price+slPips*pipU, tp1:tp1Price, tp2:tp2Price,
+      slPips, tp1Pips, tp2Pips, usedMin:false,
       srWarning:null, target:'Mean (middle BB)',
     };
   }
@@ -2594,6 +2203,8 @@ function setTimeframe(tf, btn){
     state[p].confHistory=[];
     state[p].price=null;
     state[p].dataSource='loading';
+    state[p].mrData=null;
+    state[p].prevRawSignal=null;
   });
 
   // Clear cards and refetch
@@ -2611,7 +2222,6 @@ function showPage(name,btn){
   if(name==='journal') renderTrades();
   if(name==='calc') calcPosition();
   if(name==='alerts') renderAlertList();
-  if(name==='news') renderWeeklyCalendar();
   // backtest page renders on demand via Run button
 }
 function logout(){
@@ -2699,8 +2309,6 @@ function initApp(){
   renderTrades();
   calcPosition();
   fetchAllPrices(true);
-  fetchWeeklyNews();
-  setInterval(fetchWeeklyNews, 1800000);
 }
 
 // ═══════════════════════════════════════════════
