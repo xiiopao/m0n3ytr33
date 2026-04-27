@@ -620,17 +620,9 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
       </div>
 
-      <!-- Strategy Mode Switcher -->
-      <div class="strategy-switcher">
-        <button class="strategy-btn trend active" id="strat-trend" onclick="setStrategy('trend',this)">
-          📈 TREND FOLLOWING
-        </button>
-        <button class="strategy-btn reversion" id="strat-reversion" onclick="setStrategy('reversion',this)">
-          🔄 MEAN REVERSION
-        </button>
-      </div>
-      <div class="strategy-info trend" id="strategy-info">
-        <strong>Classic Swing (Option A)</strong> — EMA21/EMA50 crossover (trend direction) + RSI 14 (momentum filter) + ATR 14 (volatility filter). Fires on fresh cross or trend continuation. Self-fulfilling signals — thousands of traders watch these levels.
+      <!-- Active strategy info banner -->
+      <div class="strategy-info reversion" id="strategy-info">
+        <strong>🔄 Mean Reversion Strategy</strong> — Buys when price is at the lower Bollinger Band extreme, sells at the upper extreme. Targets a return to the mean (middle band). Optimized for ranging pairs like EUR/GBP and EUR/CHF.
       </div>
       <!-- Weekly Danger Meter -->
       <div class="danger-meter" id="danger-meter">
@@ -768,9 +760,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
             </div>
             <div class="form-group" style="margin-bottom:14px">
               <div class="form-label">Strategy</div>
-              <select class="form-select" id="bt-strategy">
-                <option value="trend">📈 Trend Following</option>
-                <option value="reversion">🔄 Mean Reversion</option>
+              <select class="form-select" id="bt-strategy" disabled style="opacity:0.7;cursor:not-allowed">
+                <option value="reversion" selected>🔄 Mean Reversion (locked)</option>
               </select>
             </div>
             <div class="form-group" style="margin-bottom:14px">
@@ -864,7 +855,7 @@ let currentTF = '4h'; // default
 // STATE
 // ═══════════════════════════════════════════════
 let state = {};
-let strategyMode = 'trend'; // 'trend' or 'reversion'
+const strategyMode = 'reversion'; // Locked to mean reversion strategy
 let alertLog = [];
 let trades = [];
 let lastHistoryFetch = {};
@@ -1064,7 +1055,7 @@ async function runBacktest(){
       const atr   = calcATR(h);
 
       // ── STRATEGY BRANCH ─────────────────────────────
-      const btStrategy = document.getElementById('bt-strategy')?.value||'trend';
+      const btStrategy = document.getElementById('bt-strategy')?.value||'reversion';
       let rawSig='neutral',conf=0,confirmedEntry=false,trendAligned=true;
 
       if(btStrategy==='reversion'){
@@ -1151,12 +1142,12 @@ async function runBacktest(){
     setProgress(100,'Done!');
     await new Promise(r=>setTimeout(r,200));
 
-    const btStrat = document.getElementById('bt-strategy')?.value||'trend';
+    const btStrat = document.getElementById('bt-strategy')?.value||'reversion';
     renderBacktestResults({
       pair, tf, trades, equityCurve, balance, finalBal,
       winRate, totalPnl, profitFactor, maxDD, returnPct,
       avgWin, avgLoss, wins, losses, minConf, useTrend,
-      strategy: document.getElementById('bt-strategy')?.value||'trend',
+      strategy: document.getElementById('bt-strategy')?.value||'reversion',
     });
 
   } catch(err){
@@ -1342,48 +1333,13 @@ function isKeyEvent(name){
 }
 
 async function fetchWeeklyNews(){
-  try{
-    // Get start and end of current week (Mon-Fri)
-    const now = new Date();
-    const day = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - (day===0?6:day-1));
-    monday.setHours(0,0,0,0);
-    const friday = new Date(monday);
-    friday.setDate(monday.getDate()+4);
-    friday.setHours(23,59,59,999);
-
-    const start = monday.toISOString().split('T')[0];
-    const end   = friday.toISOString().split('T')[0];
-
-    const url = `https://api.twelvedata.com/economic_calendar?start_date=${start}&end_date=${end}&apikey=${API_KEY}&format=JSON`;
-    const r = await fetch(url);
-    const d = await r.json();
-
-    if(!d.result) throw new Error('No calendar data');
-
-    // Filter for relevant currencies only
-    const relevant = (d.result||[]).filter(e=>{
-      const currencies = ['USD','EUR','GBP','CHF'];
-      return currencies.includes(e.country);
-    });
-
-    weeklyNews = relevant.sort((a,b)=>new Date(a.date)-new Date(b.date));
-
-    // Get today's events
-    const todayStr = new Date().toISOString().split('T')[0];
-    todayNews = weeklyNews.filter(e=>(e.date||'').startsWith(todayStr));
-
-    // Calculate danger level
-    computeDangerLevel();
-    renderDangerMeter();
-    renderWeeklyCalendar();
-    renderTodayNewsBanner();
-
-  } catch(e){
-    console.warn('News calendar error:', e.message);
-    renderDangerMeter(true);
-  }
+  // The Twelve Data economic_calendar endpoint is on Ultra+ plans only ($329/mo).
+  // Show a friendly message directing user to free external calendar instead.
+  weeklyNews = [];
+  todayNews = [];
+  dangerLevel = 0;
+  renderDangerMeter('unavailable');
+  renderWeeklyCalendar();
 }
 
 function computeDangerLevel(){
@@ -1425,15 +1381,30 @@ function getDangerAdvice(level, cls){
   return '🔴 EXTREME DANGER. This is one of the worst weeks to trade. Central bank decisions or major data releases can reverse the market in seconds. Strongly recommend NO trading this week — watch and learn instead.';
 }
 
-function renderDangerMeter(error=false){
+function renderDangerMeter(state=false){
   const badge   = document.getElementById('danger-badge');
   const advice  = document.getElementById('danger-advice');
   const count   = document.getElementById('danger-events-count');
   const newsBadge = document.getElementById('news-badge');
 
-  if(error){
+  if(state==='unavailable'){
+    badge.textContent='📅 EXTERNAL CALENDAR';
+    badge.className='danger-badge caution';
+    advice.innerHTML='News calendar requires Twelve Data Ultra plan ($329/mo). For now, check the free <strong><a href="https://www.forexfactory.com/calendar" target="_blank" style="color:inherit;text-decoration:underline">ForexFactory.com calendar</a></strong> before each trading session. Avoid trading 2 hours before red folder news events.';
+    advice.className='danger-advice caution';
+    count.textContent='Manually check ForexFactory before each trading session';
+    // Empty all segments
+    for(let i=0;i<10;i++){
+      const seg = document.getElementById('ds'+i);
+      if(seg) seg.className='danger-segment';
+    }
+    if(newsBadge) newsBadge.style.display='none';
+    return;
+  }
+
+  if(state===true){
     badge.textContent='UNKNOWN';badge.className='danger-badge caution';
-    advice.textContent='Could not load calendar. Check manually at forexfactory.com';
+    advice.innerHTML='Could not load calendar. Check manually at <a href="https://www.forexfactory.com/calendar" target="_blank" style="color:inherit;text-decoration:underline"><strong>ForexFactory.com</strong></a>';
     advice.className='danger-advice caution';
     return;
   }
@@ -1497,7 +1468,26 @@ function renderTodayNewsBanner(){
 function renderWeeklyCalendar(){
   const container = document.getElementById('news-week-container');
   if(!weeklyNews.length){
-    container.innerHTML='<div class="news-loading">No events found for this week.</div>';
+    container.innerHTML=`
+      <div style="padding:40px;text-align:center;background:var(--s1);border:1px solid var(--border);border-radius:14px">
+        <div style="font-size:48px;margin-bottom:16px">📅</div>
+        <div style="font-family:var(--display);font-size:18px;font-weight:700;margin-bottom:8px">Calendar Endpoint Unavailable on Free Plan</div>
+        <div style="font-family:var(--mono);font-size:13px;color:var(--text2);line-height:1.8;max-width:540px;margin:0 auto 20px">
+          The Twelve Data economic_calendar endpoint requires the Ultra plan ($329/mo).
+          For now, please use the free <strong>ForexFactory calendar</strong> — the most popular and trusted economic calendar for forex traders.
+        </div>
+        <a href="https://www.forexfactory.com/calendar" target="_blank" style="display:inline-block;background:linear-gradient(135deg,var(--acc2),var(--purple));color:white;padding:12px 28px;border-radius:10px;text-decoration:none;font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.5px">
+          Open ForexFactory Calendar →
+        </a>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:24px;line-height:1.8">
+          ⛔ Avoid trading 2 hours before/after red folder events<br>
+          🟡 Yellow folder events also cause volatility — be cautious<br>
+          ✅ Best trading window: 7-11 AM CDT (London/NY overlap)
+        </div>
+      </div>`;
+    // Hide safe window banner
+    const sw = document.getElementById('safe-window');
+    if(sw) sw.style.display='none';
     return;
   }
 
@@ -2454,9 +2444,10 @@ function checkAlerts(){
     // Only alert if signal changed AND confidence >=50 AND trend is aligned
     if(s.signal!==s.prevSignal&&s.signal!=='neutral'&&s.confidence>=50&&s.trendAligned){
       const time=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      alertLog.unshift({pair:p,signal:s.signal,price:s.price,confidence:s.confidence,reasons:s.reasons,plan:s.plan,sr:s.sr,time});
+      alertLog.unshift({pair:p,signal:s.signal,price:s.price,confidence:s.confidence,reasons:s.reasons,plan:s.plan,sr:s.sr,time,strategy:strategyMode});
       if(alertLog.length>100) alertLog.pop();
-      showToast(`${s.signal.toUpperCase()} ${p} · ${s.confidence}% · Trend aligned ✅`);
+      const tag = strategyMode==='reversion' ? 'Mean reversion 🔄' : 'Trend aligned ✅';
+      showToast(`${s.signal.toUpperCase()} ${p} · ${s.confidence}% · ${tag}`);
       playBeep(s.signal);
       updateAlertBadge();
       renderAlertList();
@@ -2478,7 +2469,7 @@ function renderAlertList(){
     <div class="alert-item">
       <div class="alert-dot ${a.signal}"></div>
       <div class="alert-body">
-        <div class="alert-head">${a.signal.toUpperCase()} ${a.pair} @ ${fmt(a.pair,a.price)} · Trend Aligned ✅</div>
+        <div class="alert-head">${a.signal.toUpperCase()} ${a.pair} @ ${fmt(a.pair,a.price)} · ${a.strategy==='reversion'?'Mean Reversion 🔄':'Trend Aligned ✅'}</div>
         <div class="alert-conf" style="color:${cc(a.confidence)}">${cl(a.confidence)} · ${a.confidence}% · ${(a.reasons||[]).map(r=>r.t).join(' · ')}</div>
         ${a.plan?`<div class="alert-levels">
           <span style="color:var(--red)">🛑 SL: ${fmt(a.pair,a.plan.sl)} (${a.plan.slPips}p)</span>
@@ -2584,33 +2575,6 @@ function setStatus(status,msg){
 // ═══════════════════════════════════════════════
 // UI
 // ═══════════════════════════════════════════════
-function setStrategy(mode, btn){
-  strategyMode = mode;
-  document.querySelectorAll('.strategy-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-
-  const info = document.getElementById('strategy-info');
-  if(mode==='trend'){
-    info.className='strategy-info trend';
-    info.innerHTML='<strong>Classic Swing (Option A)</strong> — EMA21/EMA50 crossover (trend direction) + RSI 14 (momentum filter) + ATR 14 (volatility filter). Fires on fresh cross or trend continuation. Self-fulfilling signals — thousands of traders watch these levels.';
-  } else {
-    info.className='strategy-info reversion';
-    info.innerHTML='<strong>Mean Reversion</strong> — Buys when price is at the lower Bollinger Band extreme, sells at the upper extreme. Targets a return to the mean (middle band). Works best in ranging markets. Higher win rate, smaller individual wins.';
-  }
-
-  // Reset and refetch
-  lastHistoryFetch={};
-  PAIRS.forEach(p=>{
-    state[p].history=[];state[p].confHistory=[];
-    state[p].price=null;state[p].dataSource='loading';
-    state[p].mrData=null;state[p].prevRawSignal=null;
-  });
-  document.getElementById('pairs-list').innerHTML='';
-  clearTimeout(fetchTimer);
-  showToast(`Switched to ${mode==='trend'?'Trend Following':'Mean Reversion'} strategy`);
-  fetchAllPrices(true);
-}
-
 function setTimeframe(tf, btn){
   if(tf===currentTF) return; // already selected
   currentTF = tf;
@@ -2735,8 +2699,7 @@ function initApp(){
   renderTrades();
   calcPosition();
   fetchAllPrices(true);
-  fetchWeeklyNews(); // load news calendar on boot
-  // Refresh news calendar every 30 minutes
+  fetchWeeklyNews();
   setInterval(fetchWeeklyNews, 1800000);
 }
 
